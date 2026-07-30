@@ -257,6 +257,9 @@ class Parser(ParserBase):
         open_brace = self.expect(TokenType.DELIMITER, "{", "to open block")
         body: list[ast.Stmt | ast.Decl] = []
         while not self.check_lexeme("}") and not self.at_end():
+            if self.check(TokenType.PREPROC):
+                self.advance()  # tokenized only, never expanded (R1.2/subset)
+                continue
             pos_before = self.pos
             start_token = self.peek()
             try:
@@ -565,6 +568,9 @@ class Parser(ParserBase):
         start_token = self.peek()
         declarations: list[ast.Decl] = []
         while not self.at_end():
+            if self.check(TokenType.PREPROC):
+                self.advance()  # tokenized only, never expanded (R1.2/subset)
+                continue
             pos_before = self.pos
             try:
                 declarations.extend(self.parse_external_decl())
