@@ -68,15 +68,15 @@ must satisfy.
 
 → `skills/ast-and-visitors`.
 
-- [ ] **T3.1** `docs/grammar.ebnf` — full subset, written *before* the parser.
+- [x] **T3.1** `docs/grammar.ebnf` — full subset, written *before* the parser.
       → R2.1, R2.2
-- [ ] **T3.2** `core/ast_nodes.py`: `Node` base with `span`, `Expr`/`Stmt`/`Decl`
+- [x] **T3.2** `core/ast_nodes.py`: `Node` base with `span`, `Expr`/`Stmt`/`Decl`
       bases, `type_annotation: Type | None = None` on `Expr`. → R4.2, R4.3
-- [ ] **T3.3** `languages/c/ast_nodes.py`: one dataclass per production.
+- [x] **T3.3** `languages/c/ast_nodes.py`: one dataclass per production.
       Cross-check the node inventory against pycparser's `_c_ast.cfg`. → R4.1
-- [ ] **T3.4** `core/visitor.py`: `NodeVisitor` with `visit_<Type>` dispatch,
+- [x] **T3.4** `core/visitor.py`: `NodeVisitor` with `visit_<Type>` dispatch,
       `generic_visit`, and a `walk()` helper. Tested independently. → R4.4
-- [ ] **T3.5** AST pretty-printer producing the exact indented shape shown in the
+- [x] **T3.5** AST pretty-printer producing the exact indented shape shown in the
       course document §4.3.2, so `fixtures/golden/factorial_ast.txt` can be
       diffed. → R4.2
 
