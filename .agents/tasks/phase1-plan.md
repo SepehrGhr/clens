@@ -84,23 +84,23 @@ must satisfy.
 
 → `skills/parser`.
 
-- [ ] **T4.1** `core/parser_base.py`: cursor, `peek/advance/check/match/expect`,
+- [x] **T4.1** `core/parser_base.py`: cursor, `peek/advance/check/match/expect`,
       `at_end`, `synchronize(sync_set)`, diagnostic emission on mismatch. → R3.3
-- [ ] **T4.2** Declarations: type specifiers, pointers, function definitions and
+- [x] **T4.2** Declarations: type specifiers, pointers, function definitions and
       prototypes, parameter lists, variable declarations with multiple declarators.
-- [ ] **T4.3** `struct` declarations and struct-typed variables. → subset contract
-- [ ] **T4.4** Statements: block, if/else, while, for, return, break, continue,
+- [x] **T4.3** `struct` declarations and struct-typed variables. → subset contract
+- [x] **T4.4** Statements: block, if/else, while, for, return, break, continue,
       expression statement, empty statement.
-- [ ] **T4.5** Expressions: full precedence cascade down to primary, including
+- [x] **T4.5** Expressions: full precedence cascade down to primary, including
       postfix chains (`call`, `index`, `.`, `->`, `++`/`--`). Associativity tests
       matter here — `a - b - c` must be `(a - b) - c`.
-- [ ] **T4.6** Panic-mode recovery + the two golden error cases from the document
+- [x] **T4.6** Panic-mode recovery + the two golden error cases from the document
       (`int x = ;` and `if (y > 0 {`), asserting that the *following* declaration
       still parses. → R3.3, R3.4
-- [ ] **T4.7** Parser tests: one per production, plus a fuzz-ish robustness test
+- [x] **T4.7** Parser tests: one per production, plus a fuzz-ish robustness test
       that feeds truncated prefixes of every valid fixture and asserts no
       exception escapes. → R3.5, R9.5
-- [ ] **T4.8** `docs/first-follow.md` + optional `tools/first_follow.py`.
+- [x] **T4.8** `docs/first-follow.md` + optional `tools/first_follow.py`.
       → deliverable D3
 
 ## Stage 5 — Highlighter and renderers (≈6 commits)
