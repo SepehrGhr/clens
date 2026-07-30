@@ -1,8 +1,9 @@
 """Recursive-descent parser for the C subset (R3.1-R3.5): one function per
 non-terminal in `docs/grammar.ebnf`, named identically (`parse_<name>` for
-`<name>`). Built bottom-up in the same order as the grammar file: expressions
-first (this commit), then statements, then declarations and the program
-entry point.
+`<name>`). Call the module-level `parse()` to get a `Program` from a
+`SourceFile`; it never raises (R3.4) — panic-mode recovery (`ParseError`,
+caught at statement/declaration granularity, see `SYNC_LEXEMES`) keeps any
+one broken construct from taking down the rest of the file.
 
 Expression precedence cascade, lowest to highest binding, exactly matching
 `docs/grammar.ebnf`:
@@ -19,9 +20,12 @@ right-hand side instead, for right associativity.
 from __future__ import annotations
 
 from clens.core.ast_nodes import join
+from clens.core.diagnostics import DiagnosticCollector
 from clens.core.parser_base import ParseError, ParserBase
-from clens.core.token import TokenType
+from clens.core.source import SourceFile
+from clens.core.token import Token, TokenType, iter_significant
 from clens.languages.c import ast_nodes as ast
+from clens.languages.c.lexer import tokenize
 
 _ASSIGN_OPS = frozenset({"=", "+=", "-=", "*=", "/=", "%="})
 _EQUALITY_OPS = frozenset({"==", "!="})
@@ -51,7 +55,7 @@ _UNSUPPORTED_KEYWORDS = frozenset(
 )
 
 
-def _is_type_start(token) -> bool:
+def _is_type_start(token: Token) -> bool:
     return token.type is TokenType.KEYWORD and token.lexeme in _TYPE_START_KEYWORDS
 
 
@@ -82,10 +86,8 @@ def _unquote(lexeme: str, quote: str) -> str:
 
 class Parser(ParserBase):
     """Parses a significant-token view (see `core.token.iter_significant`)
-    of a C source file. Declaration parsing and the `parse()` entry point
-    are added by a later commit in this same class; `parse_block_item()`
-    below is provisional until then (statements only, no local
-    declarations) and is widened once `parse_var_decl_stmt` exists.
+    of a C source file into a `Program` — see the module-level `parse()`
+    for the usual entry point.
     """
 
     # ---- Expressions (lowest to highest precedence) -----------------------
@@ -256,7 +258,7 @@ class Parser(ParserBase):
             pos_before = self.pos
             start_token = self.peek()
             try:
-                body.append(self.parse_block_item())
+                body.extend(self.parse_block_item())
             except ParseError:
                 body.append(ast.ErrorStmt(span=start_token.span, message=self._last_error()))
                 self.synchronize(SYNC_LEXEMES)
@@ -264,10 +266,14 @@ class Parser(ParserBase):
         close = self.expect(TokenType.DELIMITER, "}", "to close block")
         return ast.Block(span=join(open_brace.span, close.span), body=body)
 
-    def parse_block_item(self) -> ast.Stmt | ast.Decl:
-        # Widened to `var_decl_stmt | statement` once parse_var_decl_stmt
-        # exists (declarations commit); statement-only for now.
-        return self.parse_statement()
+    def parse_block_item(self) -> list[ast.Stmt | ast.Decl]:
+        """`block_item = var_decl_stmt | statement`. Returns a list because
+        one `var_decl_stmt` line can expand to several sibling `VarDecl`s
+        (`int a = 1, b, c = 3;`).
+        """
+        if _is_type_start(self.peek()):
+            return list(self.parse_var_decl_stmt())
+        return [self.parse_statement()]
 
     def parse_statement(self) -> ast.Stmt:
         token = self.peek()
@@ -329,9 +335,9 @@ class Parser(ParserBase):
         for_token = self.advance()  # "for"
         self.expect(TokenType.DELIMITER, "(", "after 'for'")
 
-        init: ast.Stmt | ast.Decl | None = None
+        init: ast.Stmt | list[ast.VarDecl] | None = None
         if _is_type_start(self.peek()):
-            init = self.parse_var_decl_stmt()  # consumes its own ';'
+            init = self.parse_var_decl_stmt()  # list[VarDecl]; consumes its own ';'
         else:
             if not self.check_lexeme(";"):
                 init_expr = self.parse_expression()
@@ -374,3 +380,204 @@ class Parser(ParserBase):
         if self.diagnostics.diagnostics:
             return self.diagnostics.diagnostics[-1].message
         raise AssertionError("unreachable: fail() always logs a diagnostic before raising")
+
+    # ---- Types ----------------------------------------------------------
+
+    def parse_type_spec(self) -> ast.TypeSpec:
+        start_token = self.peek()
+        storage: str | None = None
+        while self.check(TokenType.KEYWORD) and self.peek().lexeme in STORAGE_KEYWORDS:
+            storage = self.advance().lexeme
+
+        is_const = False
+        if self.check_lexeme("const"):
+            self.advance()
+            is_const = True
+
+        if self.check_lexeme("struct"):
+            self.advance()
+            name_token = self.expect_type(TokenType.IDENT, "struct tag name")
+            base, struct_name, end_token = "struct", name_token.lexeme, name_token
+        elif self.check(TokenType.KEYWORD) and self.peek().lexeme in BASE_TYPE_KEYWORDS:
+            base_token = self.advance()
+            base, struct_name, end_token = base_token.lexeme, None, base_token
+        else:
+            self.fail(f"expected a type, got {self._describe_current()}")
+
+        pointer_depth = 0
+        while self.check_lexeme("*"):
+            end_token = self.advance()
+            pointer_depth += 1
+
+        return ast.TypeSpec(
+            span=join(start_token.span, end_token.span),
+            base=base,
+            struct_name=struct_name,
+            pointer_depth=pointer_depth,
+            is_const=is_const,
+            storage=storage,
+        )
+
+    def _parse_array_suffix(self) -> tuple[ast.Expr | None, Token]:
+        """`"[" [int_lit] "]"`, given the '[' has already been checked (not
+        consumed). Returns the optional size literal and the closing ']'.
+        """
+        self.advance()  # "["
+        size: ast.Expr | None = None
+        if self.check(TokenType.INT_LIT):
+            size_token = self.advance()
+            size = ast.IntLiteral(span=size_token.span, value=_parse_int_literal(size_token.lexeme))
+        close = self.expect(TokenType.DELIMITER, "]", "to close array size")
+        return size, close
+
+    # ---- Declarations -----------------------------------------------------
+
+    def parse_param(self) -> ast.Param:
+        type_spec = self.parse_type_spec()
+        name_token = self.expect_type(TokenType.IDENT, "parameter name")
+        array = False
+        array_size: ast.Expr | None = None
+        end_token = name_token
+        if self.check_lexeme("["):
+            array = True
+            array_size, end_token = self._parse_array_suffix()
+        return ast.Param(
+            span=join(type_spec.span, end_token.span),
+            type=type_spec,
+            name=name_token.lexeme,
+            array=array,
+            array_size=array_size,
+        )
+
+    def parse_param_list(self) -> list[ast.Param]:
+        params = [self.parse_param()]
+        while self.match_lexeme(","):
+            params.append(self.parse_param())
+        return params
+
+    def _finish_declarator(self, base_type: ast.TypeSpec, name_token: Token) -> ast.VarDecl:
+        array = False
+        array_size: ast.Expr | None = None
+        last_span = name_token.span
+        if self.check_lexeme("["):
+            array = True
+            array_size, close = self._parse_array_suffix()
+            last_span = close.span
+        init: ast.Expr | None = None
+        if self.match_lexeme("="):
+            init = self.parse_assignment_expr()
+            last_span = init.span
+        return ast.VarDecl(
+            span=join(base_type.span, last_span),
+            type=base_type,
+            name=name_token.lexeme,
+            array=array,
+            array_size=array_size,
+            init=init,
+        )
+
+    def parse_var_decl_list(self, base_type: ast.TypeSpec, first_name: Token) -> list[ast.VarDecl]:
+        """The rest of `declarator , { "," , declarator } , ";"`, given
+        `base_type` and the first declarator's name already parsed.
+        """
+        decls = [self._finish_declarator(base_type, first_name)]
+        while self.match_lexeme(","):
+            name_token = self.expect_type(TokenType.IDENT, "declarator name")
+            decls.append(self._finish_declarator(base_type, name_token))
+        self.expect(TokenType.DELIMITER, ";", "after variable declaration")
+        return decls
+
+    def parse_var_decl_stmt(self) -> list[ast.VarDecl]:
+        type_spec = self.parse_type_spec()
+        name_token = self.expect_type(TokenType.IDENT, "declarator name")
+        return self.parse_var_decl_list(type_spec, name_token)
+
+    def _finish_func_decl(self, return_type: ast.TypeSpec, name_token: Token) -> ast.FuncDecl:
+        self.advance()  # "("
+        params: list[ast.Param] = []
+        if self.check_lexeme("void") and self.peek(1).lexeme == ")":
+            self.advance()  # "void" meaning "no parameters", not a param named nothing
+        elif not self.check_lexeme(")"):
+            params = self.parse_param_list()
+        self.expect(TokenType.DELIMITER, ")", "to close parameter list")
+        if self.check_lexeme("{"):
+            body = self.parse_block()
+            end_span = body.span
+        else:
+            semi = self.expect(TokenType.DELIMITER, ";", "after function prototype")
+            body = None
+            end_span = semi.span
+        return ast.FuncDecl(
+            span=join(return_type.span, end_span),
+            return_type=return_type,
+            name=name_token.lexeme,
+            params=params,
+            body=body,
+        )
+
+    def parse_field_decl(self) -> ast.Field:
+        type_spec = self.parse_type_spec()
+        name_token = self.expect_type(TokenType.IDENT, "field name")
+        semi = self.expect(TokenType.DELIMITER, ";", "after struct field")
+        return ast.Field(
+            span=join(type_spec.span, semi.span), type=type_spec, name=name_token.lexeme
+        )
+
+    def parse_struct_decl(self) -> ast.StructDecl:
+        struct_token = self.advance()  # "struct"
+        name_token = self.expect_type(TokenType.IDENT, "struct tag name")
+        self.expect(TokenType.DELIMITER, "{", "to open struct body")
+        fields: list[ast.Field] = []
+        while not self.check_lexeme("}") and not self.at_end():
+            pos_before = self.pos
+            try:
+                fields.append(self.parse_field_decl())
+            except ParseError:
+                self.synchronize(SYNC_LEXEMES)
+            self.guard_progress(pos_before)
+        self.expect(TokenType.DELIMITER, "}", "to close struct body")
+        semi = self.expect(TokenType.DELIMITER, ";", "after struct declaration")
+        return ast.StructDecl(
+            span=join(struct_token.span, semi.span), name=name_token.lexeme, fields=fields
+        )
+
+    def parse_external_decl(self) -> list[ast.Decl]:
+        """`external_decl = func_decl | struct_decl | var_decl_stmt`.
+        Returns a list because a var_decl_stmt line can expand to several
+        sibling VarDecls, same as `parse_block_item`.
+        """
+        token = self.peek()
+        if token.type is TokenType.KEYWORD and token.lexeme in _UNSUPPORTED_KEYWORDS:
+            self.fail(f"unsupported construct: '{token.lexeme}' (see docs/known-limitations.md)")
+        if self.check_lexeme("struct") and self.peek(2).lexeme == "{":
+            return [self.parse_struct_decl()]
+        type_spec = self.parse_type_spec()
+        name_token = self.expect_type(TokenType.IDENT, "declared name")
+        if self.check_lexeme("("):
+            return [self._finish_func_decl(type_spec, name_token)]
+        return list(self.parse_var_decl_list(type_spec, name_token))
+
+    # ---- Program (entry production) ----------------------------------
+
+    def parse_program(self) -> ast.Program:
+        start_token = self.peek()
+        declarations: list[ast.Decl] = []
+        while not self.at_end():
+            pos_before = self.pos
+            try:
+                declarations.extend(self.parse_external_decl())
+            except ParseError:
+                self.synchronize(SYNC_LEXEMES)
+            self.guard_progress(pos_before)
+        return ast.Program(span=join(start_token.span, self.peek().span), declarations=declarations)
+
+
+def parse(source: SourceFile, diagnostics: DiagnosticCollector) -> ast.Program:
+    """Parse a C `SourceFile` into a `Program`. Never returns `None` and
+    never raises (R3.4): every `ParseError` is caught internally by panic-
+    mode recovery, and the best partial tree is returned alongside whatever
+    diagnostics were recorded.
+    """
+    tokens = list(iter_significant(tokenize(source, diagnostics)))
+    parser = Parser(tokens, diagnostics)
+    return parser.parse_program()

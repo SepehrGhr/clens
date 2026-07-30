@@ -177,7 +177,9 @@ class WhileStmt(Stmt):
 
 @dataclass(slots=True, kw_only=True)
 class ForStmt(Stmt):
-    init: Stmt | Decl | None = None
+    # A declaration init clause (`for (int i = 0, j = 9; ...)`) can expand
+    # to more than one sibling VarDecl, same as any other declarator list.
+    init: Stmt | list[VarDecl] | None = None
     condition: Expr | None = None
     update: Expr | None = None
     body: Stmt
