@@ -32,17 +32,17 @@ must satisfy.
 
 ## Stage 1 — Core primitives (≈5 commits)
 
-- [ ] **T1.1** `core/source.py`: `SourceFile` — text, filename, line-start index,
+- [x] **T1.1** `core/source.py`: `SourceFile` — text, filename, line-start index,
       `offset_to_line_col()`, `line_col_to_offset()`, `line_text()`. Handle `\n`,
       `\r\n`, no trailing newline, empty file. Tests first-class here; every
       later position bug traces back to this file. → R1.1
-- [ ] **T1.2** `core/token.py`: `TokenType` enum, `Token` dataclass, `is_trivia`,
+- [x] **T1.2** `core/token.py`: `TokenType` enum, `Token` dataclass, `is_trivia`,
       `Span`. → R1.1, R1.2
-- [ ] **T1.3** `core/diagnostics.py`: `Severity`, `Diagnostic` (LSP-shaped, full
+- [x] **T1.3** `core/diagnostics.py`: `Severity`, `Diagnostic` (LSP-shaped, full
       start/end range), `DiagnosticCollector` with sorting and JSON export.
       → R1.5, D11
-- [ ] **T1.4** Tests for T1.1–T1.3 including the CRLF and empty-file edge cases.
-- [ ] **T1.5** `tests/unit/test_layering.py` — asserts no file under `core/`
+- [x] **T1.4** Tests for T1.1–T1.3 including the CRLF and empty-file edge cases.
+- [x] **T1.5** `tests/unit/test_layering.py` — asserts no file under `core/`
       imports from `languages/`. → D12
 
 ## Stage 2 — Lexer (≈7 commits)
