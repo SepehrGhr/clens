@@ -1,0 +1,13 @@
+# Course document section 4.3.2 — AST for line 3 of valid/factorial.c:
+#     return n * factorial(n - 1);
+#
+# These line:column values are the golden position test for R4.2.
+# Lines and columns are 1-based; the file is indented with 4 spaces.
+
+ReturnStmt
+  value: BinaryExpr(op='*')
+    left:  Identifier(name='n', loc=3:12)
+    right: CallExpr(callee='factorial', loc=3:16)
+      args[0]: BinaryExpr(op='-')
+        left:  Identifier(name='n', loc=3:26)
+        right: IntLiteral(value=1, loc=3:30)

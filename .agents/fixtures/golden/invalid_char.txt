@@ -1,0 +1,14 @@
+# Course document section 4.2.3 — expected behaviour for
+# lexical-errors/invalid_char.c
+#
+# Source:
+#     1 | int x@ = 5;
+#     2 | int y = 10;
+
+INVALID('@') emitted at 1:6
+scanning resumes at 1:7
+line 2 scans cleanly, including INT(10)
+
+Expected diagnostics: exactly one, severity=error,
+  message: unrecognized character '@'
+  start: 1:6   end: 1:7
