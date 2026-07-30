@@ -19,7 +19,7 @@ right-hand side instead, for right associativity.
 
 from __future__ import annotations
 
-from clens.core.ast_nodes import join
+from clens.core.ast_nodes import ErrorStmt, join
 from clens.core.diagnostics import DiagnosticCollector
 from clens.core.parser_base import ParseError, ParserBase
 from clens.core.source import SourceFile
@@ -49,7 +49,9 @@ _STATEMENT_KEYWORDS = frozenset({"if", "while", "for", "return", "break", "conti
 SYNC_LEXEMES = _STATEMENT_KEYWORDS | _TYPE_START_KEYWORDS
 
 #: Real C keywords this subset deliberately excludes (project/03-c-subset.md).
-#: Seeing one is a clear diagnostic and a synchronize(), never a crash.
+#: Seeing one is a clear diagnostic and a synchronize(), never a crash. None of
+#: these are in languages/c/keywords.py, so the lexer hands them back as
+#: plain IDENT tokens — checked here by lexeme, not TokenType.KEYWORD.
 _UNSUPPORTED_KEYWORDS = frozenset(
     {"typedef", "union", "enum", "switch", "case", "goto", "default", "do"}
 )
@@ -260,7 +262,7 @@ class Parser(ParserBase):
             try:
                 body.extend(self.parse_block_item())
             except ParseError:
-                body.append(ast.ErrorStmt(span=start_token.span, message=self._last_error()))
+                body.append(ErrorStmt(span=start_token.span, message=self._last_error()))
                 self.synchronize(SYNC_LEXEMES)
             self.guard_progress(pos_before)
         close = self.expect(TokenType.DELIMITER, "}", "to close block")
@@ -277,7 +279,7 @@ class Parser(ParserBase):
 
     def parse_statement(self) -> ast.Stmt:
         token = self.peek()
-        if token.type is TokenType.KEYWORD and token.lexeme in _UNSUPPORTED_KEYWORDS:
+        if token.lexeme in _UNSUPPORTED_KEYWORDS:
             self.fail(f"unsupported construct: '{token.lexeme}' (see docs/known-limitations.md)")
         if token.type is TokenType.DELIMITER and token.lexeme == "{":
             return self.parse_block()
@@ -547,7 +549,7 @@ class Parser(ParserBase):
         sibling VarDecls, same as `parse_block_item`.
         """
         token = self.peek()
-        if token.type is TokenType.KEYWORD and token.lexeme in _UNSUPPORTED_KEYWORDS:
+        if token.lexeme in _UNSUPPORTED_KEYWORDS:
             self.fail(f"unsupported construct: '{token.lexeme}' (see docs/known-limitations.md)")
         if self.check_lexeme("struct") and self.peek(2).lexeme == "{":
             return [self.parse_struct_decl()]
