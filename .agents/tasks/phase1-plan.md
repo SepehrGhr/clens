@@ -26,7 +26,7 @@ must satisfy.
 - [x] **T0.5** `Dockerfile` (slim base, non-root user, `ENTRYPOINT ["clens"]`) +
       `.dockerignore`. Verify `docker build` and `docker run --rm c-lens --help`.
       → `skills/devops`
-- [ ] **T0.6** `.github/workflows/ci.yml`: install, ruff, pytest with coverage,
+- [x] **T0.6** `.github/workflows/ci.yml`: install, ruff, pytest with coverage,
       coverage gate at 80%. Badge into `README.md`. → `skills/devops`
       *(Pages publishing comes later in T6.3, once there is HTML to publish.)*
 
