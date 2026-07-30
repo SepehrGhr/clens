@@ -13,7 +13,7 @@ must satisfy.
 
 ## Stage 0 — Scaffold (≈6 commits)
 
-- [ ] **T0.1** `git init`, `.gitignore` (Python), `LICENSE`, empty `README.md`.
+- [x] **T0.1** `git init`, `.gitignore` (Python), `LICENSE`, empty `README.md`.
       → `skills/git-workflow`
 - [ ] **T0.2** `pyproject.toml` (hatchling or setuptools, `src/` layout, console
       script `clens = clens.cli.main:main`, ruff + pytest config),
