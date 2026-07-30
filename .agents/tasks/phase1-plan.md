@@ -23,7 +23,7 @@ must satisfy.
       `render/`, `cli/`, each with `__init__.py` and a module docstring.
 - [x] **T0.4** `tests/` skeleton + `conftest.py` with a `fixture_path` helper. One
       trivial passing test so CI is green from the first push.
-- [ ] **T0.5** `Dockerfile` (slim base, non-root user, `ENTRYPOINT ["clens"]`) +
+- [x] **T0.5** `Dockerfile` (slim base, non-root user, `ENTRYPOINT ["clens"]`) +
       `.dockerignore`. Verify `docker build` and `docker run --rm c-lens --help`.
       → `skills/devops`
 - [ ] **T0.6** `.github/workflows/ci.yml`: install, ruff, pytest with coverage,
