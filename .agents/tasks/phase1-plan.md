@@ -15,13 +15,13 @@ must satisfy.
 
 - [x] **T0.1** `git init`, `.gitignore` (Python), `LICENSE`, empty `README.md`.
       → `skills/git-workflow`
-- [ ] **T0.2** `pyproject.toml` (hatchling or setuptools, `src/` layout, console
+- [x] **T0.2** `pyproject.toml` (hatchling or setuptools, `src/` layout, console
       script `clens = clens.cli.main:main`, ruff + pytest config),
       `requirements.txt` (empty / comment: core has zero runtime deps),
       `requirements-dev.txt` (pytest, pytest-cov, ruff). → `skills/devops`
-- [ ] **T0.3** Package skeleton: `src/clens/` with `core/`, `languages/c/`,
+- [x] **T0.3** Package skeleton: `src/clens/` with `core/`, `languages/c/`,
       `render/`, `cli/`, each with `__init__.py` and a module docstring.
-- [ ] **T0.4** `tests/` skeleton + `conftest.py` with a `fixture_path` helper. One
+- [x] **T0.4** `tests/` skeleton + `conftest.py` with a `fixture_path` helper. One
       trivial passing test so CI is green from the first push.
 - [ ] **T0.5** `Dockerfile` (slim base, non-root user, `ENTRYPOINT ["clens"]`) +
       `.dockerignore`. Verify `docker build` and `docker run --rm c-lens --help`.
