@@ -1,8 +1,8 @@
-"""R1.1, R1.2 — Token, TokenType, is_trivia, Span."""
+"""R1.1, R1.2, R1.8 — Token, TokenType, is_trivia, Span, iter_significant."""
 
 import pytest
 
-from clens.core.token import Span, Token, TokenType
+from clens.core.token import Span, Token, TokenType, iter_significant
 
 
 def make_token(type_: TokenType, lexeme: str) -> Token:
@@ -64,3 +64,22 @@ def test_all_r1_2_categories_exist():
         "EOF",
     }
     assert required <= {member.name for member in TokenType}
+
+
+def test_iter_significant_filters_trivia():
+    tokens = [
+        make_token(TokenType.WHITESPACE, " "),
+        make_token(TokenType.KEYWORD, "int"),
+        make_token(TokenType.WHITESPACE, " "),
+        make_token(TokenType.IDENT, "x"),
+        make_token(TokenType.LINE_COMMENT, "// hi"),
+        make_token(TokenType.BLOCK_COMMENT, "/* hi */"),
+        make_token(TokenType.DELIMITER, ";"),
+        make_token(TokenType.EOF, ""),
+    ]
+    assert [t.type for t in iter_significant(tokens)] == [
+        TokenType.KEYWORD,
+        TokenType.IDENT,
+        TokenType.DELIMITER,
+        TokenType.EOF,
+    ]

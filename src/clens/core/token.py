@@ -7,6 +7,7 @@ actual keywords/operators is language data that lives under ``languages/``.
 
 from __future__ import annotations
 
+from collections.abc import Iterable, Iterator
 from dataclasses import dataclass
 from enum import Enum, auto
 
@@ -69,3 +70,12 @@ class Token:
     def span(self) -> Span:
         """This token's location as a :class:`Span`."""
         return Span(self.start_offset, self.end_offset, self.line, self.column)
+
+
+def iter_significant(tokens: Iterable[Token]) -> Iterator[Token]:
+    """Filter out trivia (R1.8): the view the parser consumes.
+
+    The full token list, trivia included, is kept around for the highlighter
+    and renderers, which need byte-faithful reconstruction of the source.
+    """
+    return (token for token in tokens if not token.is_trivia)
