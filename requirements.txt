@@ -1,0 +1,2 @@
+# clens core has zero runtime dependencies. This file is intentionally empty
+# (kept, rather than omitted, as an explicit statement of that fact).
