@@ -49,17 +49,17 @@ must satisfy.
 
 → `skills/lexer` before starting.
 
-- [ ] **T2.1** `core/lexer_base.py`: generic master-regex scanner engine, rule
+- [x] **T2.1** `core/lexer_base.py`: generic master-regex scanner engine, rule
       ordering, position tracking, INVALID emission and single-char recovery.
       Language-agnostic. → R1.3, R1.5
-- [ ] **T2.2** `languages/c/keywords.py` + `token_rules.py`: the ordered regex
+- [x] **T2.2** `languages/c/keywords.py` + `token_rules.py`: the ordered regex
       table. Cross-check literal regexes against pycparser
       (→ `skills/pycparser-reference`). → R1.2, R1.4
-- [ ] **T2.3** `languages/c/lexer.py`: wires the C rules into the engine.
-- [ ] **T2.4** Unterminated string and unterminated block comment detection with
+- [x] **T2.3** `languages/c/lexer.py`: wires the C rules into the engine.
+- [x] **T2.4** Unterminated string and unterminated block comment detection with
       recovery. → R1.6, R1.7
-- [ ] **T2.5** Trivia retention + `iter_significant()` view for the parser. → R1.8
-- [ ] **T2.6** Lexer tests: one per token category, plus longest-match cases
+- [x] **T2.5** Trivia retention + `iter_significant()` view for the parser. → R1.8
+- [x] **T2.6** Lexer tests: one per token category, plus longest-match cases
       (`<=`, `->`, `++`), keyword-vs-identifier, and the `int x@ = 5;` golden case
       asserting `INVALID('@')` at exactly **1:6**. → R1.3–R1.7
 - [ ] **T2.7** `docs/lexical-specification.md`. → deliverable D2
