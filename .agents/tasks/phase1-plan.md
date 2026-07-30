@@ -62,7 +62,7 @@ must satisfy.
 - [x] **T2.6** Lexer tests: one per token category, plus longest-match cases
       (`<=`, `->`, `++`), keyword-vs-identifier, and the `int x@ = 5;` golden case
       asserting `INVALID('@')` at exactly **1:6**. → R1.3–R1.7
-- [ ] **T2.7** `docs/lexical-specification.md`. → deliverable D2
+- [x] **T2.7** `docs/lexical-specification.md`. → deliverable D2
 
 ## Stage 3 — Grammar and AST (≈5 commits)
 
