@@ -119,3 +119,16 @@ def test_never_raises_on_unusual_unicode_input():
     # tokens rather than raising.
     assert any(t.type == TokenType.INVALID for t in tokens)
     assert diagnostics.errors
+
+
+def test_zero_length_match_cannot_hang_the_scanner():
+    """Rule 1 (never crash/hang): a pathological rule that can match empty
+    must not stall the scanner in place; it recovers like an INVALID char.
+    """
+    zero_width_rules = [
+        TokenRule("MAYBE_X", TokenType.OPERATOR, "x*"),
+        TokenRule("WS", TokenType.WHITESPACE, r"[ \t\n]+"),
+    ]
+    tokens, diagnostics = tokenize("y", rules=zero_width_rules)
+    assert [t.type for t in tokens] == [TokenType.INVALID, TokenType.EOF]
+    assert diagnostics.errors
