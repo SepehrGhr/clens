@@ -19,7 +19,7 @@ right-hand side instead, for right associativity.
 from __future__ import annotations
 
 from clens.core.ast_nodes import join
-from clens.core.parser_base import ParserBase
+from clens.core.parser_base import ParseError, ParserBase
 from clens.core.token import TokenType
 from clens.languages.c import ast_nodes as ast
 
@@ -37,6 +37,18 @@ _MEMBER_OPS = frozenset({".", "->"})
 BASE_TYPE_KEYWORDS = frozenset({"void", "char", "int", "float", "double"})
 STORAGE_KEYWORDS = frozenset({"static", "extern", "volatile", "register"})
 _TYPE_START_KEYWORDS = BASE_TYPE_KEYWORDS | STORAGE_KEYWORDS | {"struct", "const"}
+
+#: Statement-leading keywords (parser skill's synchronization set) plus the
+#: type-start keywords: anything that legitimately opens a new statement or
+#: declaration, so panic-mode recovery (R3.3) can resume there.
+_STATEMENT_KEYWORDS = frozenset({"if", "while", "for", "return", "break", "continue"})
+SYNC_LEXEMES = _STATEMENT_KEYWORDS | _TYPE_START_KEYWORDS
+
+#: Real C keywords this subset deliberately excludes (project/03-c-subset.md).
+#: Seeing one is a clear diagnostic and a synchronize(), never a crash.
+_UNSUPPORTED_KEYWORDS = frozenset(
+    {"typedef", "union", "enum", "switch", "case", "goto", "default", "do"}
+)
 
 
 def _is_type_start(token) -> bool:
@@ -70,8 +82,10 @@ def _unquote(lexeme: str, quote: str) -> str:
 
 class Parser(ParserBase):
     """Parses a significant-token view (see `core.token.iter_significant`)
-    of a C source file. Statement and declaration parsing, and the
-    `parse()` entry point, are added by later commits in this same class.
+    of a C source file. Declaration parsing and the `parse()` entry point
+    are added by a later commit in this same class; `parse_block_item()`
+    below is provisional until then (statements only, no local
+    declarations) and is widened once `parse_var_decl_stmt` exists.
     """
 
     # ---- Expressions (lowest to highest precedence) -----------------------
@@ -232,3 +246,131 @@ class Parser(ParserBase):
             self.expect(TokenType.DELIMITER, ")", "to close parenthesized expression")
             return inner
         self.fail(f"expected expression, got {self._describe_current()}")
+
+    # ---- Statements ---------------------------------------------------
+
+    def parse_block(self) -> ast.Block:
+        open_brace = self.expect(TokenType.DELIMITER, "{", "to open block")
+        body: list[ast.Stmt | ast.Decl] = []
+        while not self.check_lexeme("}") and not self.at_end():
+            pos_before = self.pos
+            start_token = self.peek()
+            try:
+                body.append(self.parse_block_item())
+            except ParseError:
+                body.append(ast.ErrorStmt(span=start_token.span, message=self._last_error()))
+                self.synchronize(SYNC_LEXEMES)
+            self.guard_progress(pos_before)
+        close = self.expect(TokenType.DELIMITER, "}", "to close block")
+        return ast.Block(span=join(open_brace.span, close.span), body=body)
+
+    def parse_block_item(self) -> ast.Stmt | ast.Decl:
+        # Widened to `var_decl_stmt | statement` once parse_var_decl_stmt
+        # exists (declarations commit); statement-only for now.
+        return self.parse_statement()
+
+    def parse_statement(self) -> ast.Stmt:
+        token = self.peek()
+        if token.type is TokenType.KEYWORD and token.lexeme in _UNSUPPORTED_KEYWORDS:
+            self.fail(f"unsupported construct: '{token.lexeme}' (see docs/known-limitations.md)")
+        if token.type is TokenType.DELIMITER and token.lexeme == "{":
+            return self.parse_block()
+        if token.type is TokenType.KEYWORD and token.lexeme == "if":
+            return self.parse_if_stmt()
+        if token.type is TokenType.KEYWORD and token.lexeme == "while":
+            return self.parse_while_stmt()
+        if token.type is TokenType.KEYWORD and token.lexeme == "for":
+            return self.parse_for_stmt()
+        if token.type is TokenType.KEYWORD and token.lexeme == "return":
+            return self.parse_return_stmt()
+        if token.type is TokenType.KEYWORD and token.lexeme == "break":
+            self.advance()
+            semi = self.expect(TokenType.DELIMITER, ";", "after 'break'")
+            return ast.BreakStmt(span=join(token.span, semi.span))
+        if token.type is TokenType.KEYWORD and token.lexeme == "continue":
+            self.advance()
+            semi = self.expect(TokenType.DELIMITER, ";", "after 'continue'")
+            return ast.ContinueStmt(span=join(token.span, semi.span))
+        if token.type is TokenType.DELIMITER and token.lexeme == ";":
+            self.advance()
+            return ast.EmptyStmt(span=token.span)
+        return self.parse_expr_stmt()
+
+    def parse_if_stmt(self) -> ast.Stmt:
+        if_token = self.advance()  # "if"
+        self.expect(TokenType.DELIMITER, "(", "after 'if'")
+        condition = self.parse_expression()
+        self.expect(TokenType.DELIMITER, ")", "to close 'if' condition")
+        then_branch = self.parse_statement()
+        else_branch: ast.Stmt | None = None
+        # Dangling else: binds to the nearest still-open 'if' simply because
+        # that 'if' is the one whose recursive parse_statement() call is on
+        # top of the stack when the 'else' token is reached.
+        if self.check_lexeme("else"):
+            self.advance()
+            else_branch = self.parse_statement()
+        end_span = (else_branch or then_branch).span
+        return ast.IfStmt(
+            span=join(if_token.span, end_span),
+            condition=condition,
+            then_branch=then_branch,
+            else_branch=else_branch,
+        )
+
+    def parse_while_stmt(self) -> ast.Stmt:
+        while_token = self.advance()  # "while"
+        self.expect(TokenType.DELIMITER, "(", "after 'while'")
+        condition = self.parse_expression()
+        self.expect(TokenType.DELIMITER, ")", "to close 'while' condition")
+        body = self.parse_statement()
+        return ast.WhileStmt(span=join(while_token.span, body.span), condition=condition, body=body)
+
+    def parse_for_stmt(self) -> ast.Stmt:
+        for_token = self.advance()  # "for"
+        self.expect(TokenType.DELIMITER, "(", "after 'for'")
+
+        init: ast.Stmt | ast.Decl | None = None
+        if _is_type_start(self.peek()):
+            init = self.parse_var_decl_stmt()  # consumes its own ';'
+        else:
+            if not self.check_lexeme(";"):
+                init_expr = self.parse_expression()
+                init = ast.ExprStmt(span=init_expr.span, expr=init_expr)
+            self.expect(TokenType.DELIMITER, ";", "after 'for' initializer")
+
+        condition: ast.Expr | None = None
+        if not self.check_lexeme(";"):
+            condition = self.parse_expression()
+        self.expect(TokenType.DELIMITER, ";", "after 'for' condition")
+
+        update: ast.Expr | None = None
+        if not self.check_lexeme(")"):
+            update = self.parse_expression()
+        self.expect(TokenType.DELIMITER, ")", "to close 'for' clauses")
+
+        body = self.parse_statement()
+        return ast.ForStmt(
+            span=join(for_token.span, body.span),
+            init=init,
+            condition=condition,
+            update=update,
+            body=body,
+        )
+
+    def parse_return_stmt(self) -> ast.Stmt:
+        return_token = self.advance()  # "return"
+        value: ast.Expr | None = None
+        if not self.check_lexeme(";"):
+            value = self.parse_expression()
+        semi = self.expect(TokenType.DELIMITER, ";", "after 'return'")
+        return ast.ReturnStmt(span=join(return_token.span, semi.span), value=value)
+
+    def parse_expr_stmt(self) -> ast.Stmt:
+        expr = self.parse_expression()
+        semi = self.expect(TokenType.DELIMITER, ";", "after expression statement")
+        return ast.ExprStmt(span=join(expr.span, semi.span), expr=expr)
+
+    def _last_error(self) -> str:
+        if self.diagnostics.diagnostics:
+            return self.diagnostics.diagnostics[-1].message
+        raise AssertionError("unreachable: fail() always logs a diagnostic before raising")
