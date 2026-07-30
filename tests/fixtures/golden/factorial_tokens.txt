@@ -1,0 +1,9 @@
+# Course document section 4.2, abbreviated token stream for valid/factorial.c.
+# Trivia (whitespace, comments) omitted here; our lexer retains it (R1.8) and the
+# test compares against the significant-token view.
+
+KW(int) IDENT(factorial) LPAREN KW(int) IDENT(n) RPAREN LBRACE
+KW(if) LPAREN IDENT(n) OP(<=) INT(1) RPAREN KW(return) INT(1) SEMI
+KW(return) IDENT(n) OP(*) IDENT(factorial) LPAREN IDENT(n) OP(-) INT(1)
+RPAREN SEMI
+RBRACE EOF
