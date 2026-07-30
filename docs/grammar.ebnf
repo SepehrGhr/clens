@@ -1,0 +1,135 @@
+(* c-lens grammar — the C subset defined in .agents/project/03-c-subset.md.
+ *
+ * Notation:
+ *   =        production
+ *   ,        sequence
+ *   |        alternation
+ *   [ x ]    x is optional (0 or 1)
+ *   { x }    x repeats 0 or more times
+ *   "x"      literal token text
+ *   ;        end of production
+ *
+ * Left-recursion-free by construction (R2.2): every expression precedence
+ * level is written as `higher_level , { operator , higher_level }` (iteration)
+ * rather than `expr , operator , higher_level` (left self-reference). This is
+ * required for recursive descent (R3.1) and is exactly what
+ * core/parser_base.py relies on.
+ *
+ * Non-terminal names match the recursive-descent function that parses them
+ * one-for-one (R3.1): `additive_expr` <-> `parse_additive_expr`, etc.
+ *
+ * Ambiguity: the grammar has exactly one classic ambiguity, dangling-else
+ * (if_stmt's optional "else" when ifs are nested). It is resolved the
+ * conventional way — the recursive-descent parser always attaches a trailing
+ * "else" to the nearest still-open "if" — documented formally, with the
+ * FIRST/FOLLOW argument, in docs/first-follow.md.
+ *)
+
+
+(* ------------------------------------------------------------------ *)
+(* Program structure                                                   *)
+(* ------------------------------------------------------------------ *)
+
+program            = { external_decl } ;
+
+external_decl      = func_decl | struct_decl | var_decl_stmt ;
+
+func_decl          = type_spec , identifier , "(" , [ param_list ] , ")" ,
+                      ( block | ";" ) ;
+                      (* a body makes it a definition; ";" makes it a
+                         prototype — both parse to the same FuncDecl node,
+                         with body = None for a prototype *)
+
+param_list         = param , { "," , param } ;
+param              = type_spec , identifier , [ "[" , [ int_lit ] , "]" ] ;
+
+struct_decl        = "struct" , identifier , "{" , { field_decl } , "}" , ";" ;
+field_decl         = type_spec , identifier , ";" ;
+
+var_decl_stmt      = type_spec , declarator , { "," , declarator } , ";" ;
+declarator         = identifier , [ "[" , [ int_lit ] , "]" ] ,
+                      [ "=" , assignment_expr ] ;
+
+type_spec          = { storage_qualifier } , [ "const" ] , base_type , { "*" } ;
+storage_qualifier  = "static" | "extern" | "volatile" | "register" ;
+base_type          = "void" | "char" | "int" | "float" | "double"
+                    | ( "struct" , identifier ) ;
+
+
+(* ------------------------------------------------------------------ *)
+(* Statements                                                          *)
+(* ------------------------------------------------------------------ *)
+
+block              = "{" , { block_item } , "}" ;
+block_item         = var_decl_stmt | statement ;
+
+statement          = block
+                    | if_stmt
+                    | while_stmt
+                    | for_stmt
+                    | return_stmt
+                    | "break" , ";"
+                    | "continue" , ";"
+                    | expr_stmt
+                    | ";" ;
+
+if_stmt            = "if" , "(" , expression , ")" , statement ,
+                      [ "else" , statement ] ;
+while_stmt         = "while" , "(" , expression , ")" , statement ;
+for_stmt           = "for" , "(" , [ for_init ] , ";" , [ expression ] , ";" ,
+                      [ expression ] , ")" , statement ;
+for_init           = var_decl_stmt | expression ;
+                      (* var_decl_stmt already consumes the ";" that
+                         separates the init clause from the condition *)
+return_stmt        = "return" , [ expression ] , ";" ;
+expr_stmt          = expression , ";" ;
+
+
+(* ------------------------------------------------------------------ *)
+(* Expressions — precedence cascade, lowest to highest                 *)
+(* ------------------------------------------------------------------ *)
+
+expression         = assignment_expr ;
+
+assignment_expr    = ternary_expr , [ assign_op , assignment_expr ] ;
+                      (* right-associative: a = b = c -> a = (b = c) *)
+assign_op          = "=" | "+=" | "-=" | "*=" | "/=" | "%=" ;
+
+ternary_expr       = logical_or_expr , [ "?" , expression , ":" , assignment_expr ] ;
+                      (* right-associative *)
+
+logical_or_expr    = logical_and_expr , { "||" , logical_and_expr } ;
+logical_and_expr   = equality_expr , { "&&" , equality_expr } ;
+equality_expr      = relational_expr , { ( "==" | "!=" ) , relational_expr } ;
+relational_expr    = additive_expr , { ( "<" | ">" | "<=" | ">=" ) , additive_expr } ;
+additive_expr      = multiplicative_expr , { ( "+" | "-" ) , multiplicative_expr } ;
+                      (* left-associative: a - b - c -> (a - b) - c *)
+multiplicative_expr = unary_expr , { ( "*" | "/" | "%" ) , unary_expr } ;
+
+unary_expr         = ( ( "-" | "!" | "&" | "*" | "~" | "++" | "--" ) , unary_expr )
+                    | ( "sizeof" , "(" , type_spec , ")" )
+                    | ( "sizeof" , unary_expr )
+                    | postfix_expr ;
+
+postfix_expr       = primary_expr , { postfix_op } ;
+postfix_op         = ( "(" , [ arg_list ] , ")" )
+                    | ( "[" , expression , "]" )
+                    | ( "." , identifier )
+                    | ( "->" , identifier )
+                    | "++"
+                    | "--" ;
+arg_list           = assignment_expr , { "," , assignment_expr } ;
+
+primary_expr       = int_lit | float_lit | string_lit | char_lit
+                    | identifier
+                    | ( "(" , expression , ")" ) ;
+
+
+(* ------------------------------------------------------------------ *)
+(* Lexical non-terminals — produced by the lexer, not this grammar     *)
+(* ------------------------------------------------------------------ *)
+
+(* identifier, int_lit, float_lit, string_lit, char_lit are terminals
+ * supplied as IDENT / INT_LIT / FLOAT_LIT / STRING_LIT / CHAR_LIT tokens.
+ * Their lexical form is specified formally in docs/lexical-specification.md,
+ * not repeated here. *)
