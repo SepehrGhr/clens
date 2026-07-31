@@ -1,13 +1,28 @@
 """S8.2, D22, D23 — the web UI backend, tested via the handler functions
 directly (no socket, no live server) per the web-ui skill's own guidance:
 one test per endpoint, plus malformed JSON, a missing field, and a source
-that fails to parse. One separate live-socket smoke test for GET /.
+that fails to parse. A handful of live-socket tests cover the HTTP
+plumbing itself (`ClensRequestHandler`), which the handler-level tests
+above never touch.
 """
+
+import http.client
+import json
+import threading
+from http.server import HTTPServer
+
+import pytest
 
 from clens.core.highlight import Category
 from clens.core.theme import THEME
 from clens.web.renderer import generate_theme_css
-from clens.web.server import dispatch_post, handle_analyze, handle_complete, handle_hover
+from clens.web.server import (
+    ClensRequestHandler,
+    dispatch_post,
+    handle_analyze,
+    handle_complete,
+    handle_hover,
+)
 
 # --- /api/analyze ----------------------------------------------------------
 
@@ -118,60 +133,107 @@ def test_dispatch_post_analyze_route_end_to_end():
     assert payload["symbols"]["symbols"][0]["name"] == "g"
 
 
-# --- live-socket smoke test ------------------------------------------------
+def test_dispatch_post_handler_raising_is_a_500_not_a_crash(monkeypatch):
+    """Rule 1 at the web layer: a handler that somehow raises must become
+    a 500 JSON response, never an unhandled exception."""
+    import clens.web.server as server_module
+
+    def _broken(body):
+        raise RuntimeError("boom")
+
+    monkeypatch.setitem(server_module._POST_ROUTES, "/api/analyze", _broken)
+    payload, status = dispatch_post("/api/analyze", b"{}")
+    assert status == 500
+    assert "boom" in payload["error"]
 
 
-def test_serve_smoke_test_get_root(tmp_path):
-    import http.client
-    import threading
-    from http.server import HTTPServer
+# --- live-socket tests: the actual ClensRequestHandler, not just the pure
+# handler functions above ----------------------------------------------
 
-    from clens.web.server import ClensRequestHandler
 
+@pytest.fixture
+def running_server():
     server = HTTPServer(("127.0.0.1", 0), ClensRequestHandler)
     port = server.server_address[1]
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
     try:
-        conn = http.client.HTTPConnection("127.0.0.1", port, timeout=5)
-        conn.request("GET", "/")
-        response = conn.getresponse()
-        body = response.read()
-        assert response.status == 200
-        assert b"<html" in body.lower()
-        conn.close()
+        yield port
     finally:
         server.shutdown()
         server.server_close()
         thread.join(timeout=5)
 
 
-def test_theme_css_served_dynamically_matches_generate_theme_css():
+def test_serve_smoke_test_get_root(running_server):
+    conn = http.client.HTTPConnection("127.0.0.1", running_server, timeout=5)
+    conn.request("GET", "/")
+    response = conn.getresponse()
+    body = response.read()
+    assert response.status == 200
+    assert b"<html" in body.lower()
+    conn.close()
+
+
+def test_theme_css_served_dynamically_matches_generate_theme_css(running_server):
     """/static/theme.css must be provably shared with core/theme.py (skill's
     own requirement), served live via generate_theme_css() rather than a
     committed file that could drift out of sync.
     """
-    import http.client
-    import threading
-    from http.server import HTTPServer
+    conn = http.client.HTTPConnection("127.0.0.1", running_server, timeout=5)
+    conn.request("GET", "/static/theme.css")
+    response = conn.getresponse()
+    body = response.read().decode("utf-8")
+    assert response.status == 200
+    assert body == generate_theme_css()
+    for category in Category:
+        assert THEME[category].hex_color in body
+    conn.close()
 
-    from clens.web.server import ClensRequestHandler
 
-    server = HTTPServer(("127.0.0.1", 0), ClensRequestHandler)
-    port = server.server_address[1]
-    thread = threading.Thread(target=server.serve_forever, daemon=True)
-    thread.start()
-    try:
-        conn = http.client.HTTPConnection("127.0.0.1", port, timeout=5)
-        conn.request("GET", "/static/theme.css")
-        response = conn.getresponse()
-        body = response.read().decode("utf-8")
-        assert response.status == 200
-        assert body == generate_theme_css()
-        for category in Category:
-            assert THEME[category].hex_color in body
-        conn.close()
-    finally:
-        server.shutdown()
-        server.server_close()
-        thread.join(timeout=5)
+def test_get_unknown_path_is_404(running_server):
+    conn = http.client.HTTPConnection("127.0.0.1", running_server, timeout=5)
+    conn.request("GET", "/nonexistent")
+    response = conn.getresponse()
+    response.read()
+    assert response.status == 404
+    conn.close()
+
+
+def test_get_static_missing_file_is_404(running_server):
+    conn = http.client.HTTPConnection("127.0.0.1", running_server, timeout=5)
+    conn.request("GET", "/static/does-not-exist.js")
+    response = conn.getresponse()
+    response.read()
+    assert response.status == 404
+    conn.close()
+
+
+def test_get_static_path_traversal_is_404(running_server):
+    """`_serve_static` must not let '/static/../server.py' escape STATIC_DIR."""
+    conn = http.client.HTTPConnection("127.0.0.1", running_server, timeout=5)
+    conn.request("GET", "/static/../server.py")
+    response = conn.getresponse()
+    response.read()
+    assert response.status == 404
+    conn.close()
+
+
+def test_post_api_analyze_over_a_real_socket(running_server):
+    conn = http.client.HTTPConnection("127.0.0.1", running_server, timeout=5)
+    body = json.dumps({"source": "int g;\n"}).encode("utf-8")
+    conn.request("POST", "/api/analyze", body=body, headers={"Content-Type": "application/json"})
+    response = conn.getresponse()
+    payload = json.loads(response.read())
+    assert response.status == 200
+    assert payload["symbols"]["symbols"][0]["name"] == "g"
+    conn.close()
+
+
+def test_post_unknown_route_over_a_real_socket_is_404(running_server):
+    conn = http.client.HTTPConnection("127.0.0.1", running_server, timeout=5)
+    conn.request("POST", "/api/nonexistent", body=b"{}")
+    response = conn.getresponse()
+    response.read()
+    assert response.status == 404
+    conn.close()
