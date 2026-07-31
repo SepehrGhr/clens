@@ -78,7 +78,7 @@ into every name in it.
       references. Populate `references`, set `is_used`. → S3.3
       P3.2 and P3.3 landed together: scope construction and reference
       resolution are the same tree walk, not separable steps.
-- [ ] **P3.4** Diagnostics: undefined symbol (S6.1 row 5), duplicate declaration
+- [x] **P3.4** Diagnostics: undefined symbol (S6.1 row 5), duplicate declaration
       (row 8), shadowing warning (row 11). → S3.1, S3.2
 - [ ] **P3.5** Prototype-then-definition must not fire duplicate-declaration;
       mismatched signatures between them must. Test both.
