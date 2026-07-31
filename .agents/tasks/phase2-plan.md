@@ -134,7 +134,7 @@ into every name in it.
       argument list. → S5.2
 - [x] **P5.5** Ranking: prefix, then fuzzy, with scope-distance tie-breaks; emit
       `label` / `kind` / `detail` / `sortOrder`. → S5.4, S5.5, D24
-- [ ] **P5.6** Hover: signature, enclosing scope, and attached doc comment from the
+- [x] **P5.6** Hover: signature, enclosing scope, and attached doc comment from the
       retained comment tokens. → S7
 
 ## Stage 6 — Diagnostics completion (≈4 commits)
