@@ -46,7 +46,7 @@ into every name in it.
 
 - [x] **P2.1** `core/symbols.py`: `SymbolKind`, `Symbol` with **all nine** S1.1
       fields, `Reference`. → S1.1
-- [ ] **P2.2** `Scope`: kind, parent, children, ordered symbol map, covered span.
+- [x] **P2.2** `Scope`: kind, parent, children, ordered symbol map, covered span.
       `declare()`, `lookup_local()`, `lookup()`. → S1.2
 - [ ] **P2.3** `scope_at(offset)` and `symbols_visible_at(offset)`. → S1.4, D20
 - [ ] **P2.4** `SemanticModel`: global scope, scope tree, flat symbol index,
