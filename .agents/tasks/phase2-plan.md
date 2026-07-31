@@ -109,7 +109,7 @@ into every name in it.
       to `unknown` silently rather than inventing new diagnostics.
 - [x] **P4.6** **The four golden examples from S4.7**, as one test file, asserting
       exact severities: warning, error, error, error.
-- [ ] **P4.7** No-cascade test: a file with one undefined symbol used five times
+- [x] **P4.7** No-cascade test: a file with one undefined symbol used five times
       produces exactly one diagnostic. → S9.2
 
 ## Stage 5 — Completion and hover (≈6 commits)
