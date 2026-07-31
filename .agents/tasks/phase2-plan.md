@@ -12,8 +12,8 @@ into every name in it.
 
 ## Stage 0 — Carry-over and gap repair (≈5 commits)
 
-- [ ] **P0.1** Drop in the Phase 2 agent environment; commit it.
-- [ ] **P0.2** Run `pytest` and walk `checklists/phase1-acceptance.md`. Everything
+- [x] **P0.1** Drop in the Phase 2 agent environment; commit it.
+- [x] **P0.2** Run `pytest` and walk `checklists/phase1-acceptance.md`. Everything
       must still be green **before** any Phase 2 code. Fix anything that is not.
 - [ ] **P0.3** Add `MemberExpr.member_span: Span` — parser, node, tests, and the
       golden AST snapshot. → `project/07-phase1-interfaces.md` gap 1
