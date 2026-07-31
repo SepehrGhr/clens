@@ -1,9 +1,10 @@
-"""P3.6 — the closing Stage 3 sweep: mutual recursion explicitly, the full
-scopes.c nesting fixture, and robustness against ErrorStmt-heavy input.
+"""P3.6 — the closing Stage 3 sweep: mutual recursion explicitly, the
+forward-function-vs-forward-local contrast, the full scopes.c nesting
+fixture, and robustness against ErrorStmt-heavy input.
 
-Forward reference, the three shadowing depths, and same-vs-inner-scope
-redeclaration are already covered by test_resolver_prototypes.py and
-test_resolver_diagnostics.py against the real fixtures.
+Forward *function* reference, the three shadowing depths, and same-vs-
+inner-scope redeclaration are already covered by test_resolver_prototypes.py
+and test_resolver_diagnostics.py against the real fixtures.
 """
 
 from pathlib import Path
@@ -23,6 +24,19 @@ def analyze(text: str, filename: str = "a.c"):
     program = parse(source, diagnostics)
     global_scope, all_scopes, symbols_by_name = resolve(program, source, diagnostics)
     return global_scope, all_scopes, symbols_by_name, diagnostics
+
+
+def test_forward_local_reference_errors_unlike_forward_function_calls():
+    """S2.3's contrast, stated explicitly: only the global scope gets
+    forward-reference treatment. A local read before its own declaration
+    is undefined, full stop - `int y = x + 1; int x = 2;` must report
+    'x' as undefined, not silently resolve to the x declared two lines
+    down."""
+    text = "int f(void) { int y = x + 1; int x = 2; return y; }\n"
+    _, _, _, diagnostics = analyze(text)
+    undefined = [d for d in diagnostics.diagnostics if d.code == "S001"]
+    assert len(undefined) == 1
+    assert "x" in undefined[0].message
 
 
 def test_mutual_recursion_both_functions_call_each_other():
