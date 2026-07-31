@@ -71,11 +71,13 @@ into every name in it.
 
 - [x] **P3.1** Pass 1 — declaration scan: functions, prototypes, structs, globals
       into the global scope. → S2.1
-- [ ] **P3.2** Pass 2 — scope construction while walking bodies: function scope
+- [x] **P3.2** Pass 2 — scope construction while walking bodies: function scope
       holds params, `Block` opens a scope, `ForStmt` opens a scope for its init
       declarations (**remember `init` can be a list**). → S2.2
-- [ ] **P3.3** Reference resolution: `Identifier`, `CallExpr.callee`, and struct tag
+- [x] **P3.3** Reference resolution: `Identifier`, `CallExpr.callee`, and struct tag
       references. Populate `references`, set `is_used`. → S3.3
+      P3.2 and P3.3 landed together: scope construction and reference
+      resolution are the same tree walk, not separable steps.
 - [ ] **P3.4** Diagnostics: undefined symbol (S6.1 row 5), duplicate declaration
       (row 8), shadowing warning (row 11). → S3.1, S3.2
 - [ ] **P3.5** Prototype-then-definition must not fire duplicate-declaration;
