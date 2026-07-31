@@ -11,11 +11,12 @@ needs no highlighter changes) now actually being exercised.
 
 from __future__ import annotations
 
-from clens.core.highlight import HighlightMap
+from clens.core.highlight import Category, HighlightMap
 from clens.core.source import SourceFile
+from clens.core.theme import THEME
 from clens.core.token import Token, TokenType
 
-__all__ = ["render_interactive"]
+__all__ = ["generate_theme_css", "render_interactive"]
 
 
 def render_interactive(source: SourceFile, tokens: list[Token], highlight_map: HighlightMap) -> str:
@@ -36,6 +37,18 @@ def render_interactive(source: SourceFile, tokens: list[Token], highlight_map: H
             f'data-end="{token.end_offset}">{text}</span>'
         )
     return f"<pre>{''.join(parts)}</pre>"
+
+
+def generate_theme_css() -> str:
+    """The `.category { ... }` rule for every highlight `Category`,
+    generated from `core/theme.py` — the same table `render_html`'s
+    `_build_css` reads. Served as `/static/theme.css` (`web/server.py`)
+    rather than hand-duplicated in a static stylesheet, so the web UI's
+    token colors can never drift from the ANSI/HTML renderers' (a test
+    asserts this directly).
+    """
+    lines = [f".{category.value} {{ {THEME[category].css_declarations} }}" for category in Category]
+    return "\n".join(lines)
 
 
 def _escape_html(text: str) -> str:

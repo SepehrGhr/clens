@@ -4,6 +4,9 @@ one test per endpoint, plus malformed JSON, a missing field, and a source
 that fails to parse. One separate live-socket smoke test for GET /.
 """
 
+from clens.core.highlight import Category
+from clens.core.theme import THEME
+from clens.web.renderer import generate_theme_css
 from clens.web.server import dispatch_post, handle_analyze, handle_complete, handle_hover
 
 # --- /api/analyze ----------------------------------------------------------
@@ -136,6 +139,37 @@ def test_serve_smoke_test_get_root(tmp_path):
         body = response.read()
         assert response.status == 200
         assert b"<html" in body.lower()
+        conn.close()
+    finally:
+        server.shutdown()
+        server.server_close()
+        thread.join(timeout=5)
+
+
+def test_theme_css_served_dynamically_matches_generate_theme_css():
+    """/static/theme.css must be provably shared with core/theme.py (skill's
+    own requirement), served live via generate_theme_css() rather than a
+    committed file that could drift out of sync.
+    """
+    import http.client
+    import threading
+    from http.server import HTTPServer
+
+    from clens.web.server import ClensRequestHandler
+
+    server = HTTPServer(("127.0.0.1", 0), ClensRequestHandler)
+    port = server.server_address[1]
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    try:
+        conn = http.client.HTTPConnection("127.0.0.1", port, timeout=5)
+        conn.request("GET", "/static/theme.css")
+        response = conn.getresponse()
+        body = response.read().decode("utf-8")
+        assert response.status == 200
+        assert body == generate_theme_css()
+        for category in Category:
+            assert THEME[category].hex_color in body
         conn.close()
     finally:
         server.shutdown()

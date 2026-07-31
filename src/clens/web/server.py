@@ -24,7 +24,7 @@ from clens.languages.c.lexer import tokenize
 from clens.languages.c.parser import Parser
 from clens.languages.c.queries import completions_at, hover_at, scope_to_dict
 from clens.languages.c.semantic import analyze
-from clens.web.renderer import render_interactive
+from clens.web.renderer import generate_theme_css, render_interactive
 
 __all__ = [
     "ClensRequestHandler",
@@ -171,12 +171,17 @@ class ClensRequestHandler(BaseHTTPRequestHandler):
         self._send_json(payload, status=status)
 
     def _serve_static(self, relative: str) -> None:
+        if relative == "theme.css":
+            self._send_bytes(generate_theme_css().encode("utf-8"), "text/css; charset=utf-8")
+            return
         path = (STATIC_DIR / relative).resolve()
         if STATIC_DIR.resolve() not in path.parents or not path.is_file():
             self.send_error(404, "not found")
             return
         content_type = _CONTENT_TYPES.get(path.suffix, "application/octet-stream")
-        data = path.read_bytes()
+        self._send_bytes(path.read_bytes(), content_type)
+
+    def _send_bytes(self, data: bytes, content_type: str) -> None:
         self.send_response(200)
         self.send_header("Content-Type", content_type)
         self.send_header("Content-Length", str(len(data)))

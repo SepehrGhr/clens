@@ -3,12 +3,14 @@ frozen render/html.py, emitting data-start/data-end for the front end.
 """
 
 from clens.core.diagnostics import DiagnosticCollector
+from clens.core.highlight import Category
 from clens.core.source import SourceFile
+from clens.core.theme import THEME
 from clens.core.token import iter_significant
 from clens.languages.c.highlighter import highlight
 from clens.languages.c.lexer import tokenize
 from clens.languages.c.parser import Parser
-from clens.web.renderer import render_interactive
+from clens.web.renderer import generate_theme_css, render_interactive
 
 
 def render(text: str) -> str:
@@ -60,6 +62,15 @@ def test_round_trips_byte_faithfully_once_tags_are_stripped():
     stripped = re.sub(r"<span[^>]*>|</span>", "", inner)
     unescaped = stripped.replace("&amp;", "&").replace("&lt;", "<").replace("&gt;", ">")
     assert unescaped == text
+
+
+def test_generate_theme_css_covers_every_category_with_its_real_color():
+    """The web UI's theme.css must be provably shared with core/theme.py,
+    not a hand-duplicated set of hex values (skill's own requirement)."""
+    css = generate_theme_css()
+    for category in Category:
+        assert f".{category.value} {{" in css
+        assert THEME[category].hex_color in css
 
 
 def test_does_not_touch_render_html_module():

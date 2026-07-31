@@ -3,8 +3,46 @@
 <head>
 <meta charset="utf-8">
 <title>c-lens</title>
+<link rel="stylesheet" href="/static/style.css">
+<link rel="stylesheet" href="/static/theme.css">
 </head>
 <body>
-<p>placeholder</p>
+<header class="toolbar">
+  <h1>c-lens</h1>
+  <span id="status" class="status">analyzing…</span>
+</header>
+
+<main class="layout">
+  <section class="pane">
+    <div class="pane-title">Editor</div>
+    <textarea id="editor" spellcheck="false" autocapitalize="off" autocomplete="off"></textarea>
+    <div id="completion-popup" class="popup hidden"></div>
+  </section>
+
+  <section class="pane">
+    <div class="pane-title">Highlighted</div>
+    <div id="rendered" class="rendered"></div>
+    <div id="hover-card" class="popup hidden"></div>
+  </section>
+
+  <aside class="sidebar">
+    <section class="panel">
+      <h2>Diagnostics</h2>
+      <ul id="diagnostics-list" class="diagnostics-list"></ul>
+    </section>
+    <section class="panel">
+      <h2>Symbols</h2>
+      <div id="symbol-tree" class="symbol-tree"></div>
+    </section>
+  </aside>
+</main>
+
+<p class="hint">
+  Type <code>.</code> or <code>-&gt;</code> for member completion, or press
+  <kbd>Ctrl+Space</kbd> anywhere. Click a token in the highlighted pane for
+  hover info; click a diagnostic to jump to it.
+</p>
+
+<script src="/static/app.js"></script>
 </body>
 </html>

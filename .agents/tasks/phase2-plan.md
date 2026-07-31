@@ -186,10 +186,19 @@ into every name in it.
       whole POST routing decision as a pure function — every case (unknown
       route, malformed JSON, non-object body, a handler that raises) is
       testable with no socket at all.
-- [ ] **P7.3** `web/static/index.html` + `app.js` + `style.css` — side-by-side
+- [x] **P7.3** `web/static/index.html` + `app.js` + `style.css` — side-by-side
       editor and rendered pane, debounced re-analysis.
-- [ ] **P7.4** Panels: diagnostics list (click to jump), symbol tree, hover card.
-- [ ] **P7.5** Completion popup at the caret, triggered by typing and by Ctrl+Space.
+      Theme colors are NOT duplicated in `style.css`: `/static/theme.css` is
+      generated live from `core/theme.py` by `web/server.py`, and a test
+      asserts the two agree byte-for-byte.
+- [x] **P7.4** Panels: diagnostics list (click to jump), symbol tree, hover card.
+- [x] **P7.5** Completion popup at the caret, triggered by typing and by Ctrl+Space.
+      P7.3-P7.5 landed together: one `index.html`/`app.js`/`style.css` pass,
+      not three separable ones. Anchored under the editor (skill's own "ugly
+      but works, do that first"), not at the caret, avoiding textarea
+      caret-position math. Manually verified end-to-end via `clens serve` +
+      curl against every endpoint before moving on — the front end itself is
+      not unit tested (skill's explicit call).
 - [ ] **P7.6** `clens serve [--port]` command; tests for every endpoint via the
       handler directly, no live socket.
 - [ ] **P7.7** Screenshots into `docs/images/`, embedded in the README.
