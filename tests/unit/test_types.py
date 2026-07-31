@@ -151,3 +151,30 @@ def test_is_assignable_struct_mismatch_is_incompatible():
 def test_is_assignable_narrowing_golden_example():
     """S4.7 golden example 1: int x = 3.14; is a warning."""
     assert is_assignable(PrimitiveType("int"), PrimitiveType("double")) is AssignResult.NARROWING
+
+
+def test_is_assignable_mismatched_pointee_is_incompatible():
+    """int* and char* are not the same type, even though both are pointers."""
+    target = PointerType(PrimitiveType("int"))
+    source = PointerType(PrimitiveType("char"))
+    assert is_assignable(target, source) is AssignResult.INCOMPATIBLE
+
+
+def test_is_assignable_matching_pointee_is_ok():
+    target = PointerType(PrimitiveType("int"))
+    source = PointerType(PrimitiveType("int"))
+    assert is_assignable(target, source) is AssignResult.OK
+
+
+def test_is_assignable_matching_struct_is_ok():
+    decl = Node(span=SPAN)
+    assert is_assignable(StructType("Point", decl), StructType("Point", decl)) is AssignResult.OK
+
+
+def test_is_assignable_array_to_pointer_is_incompatible():
+    """Arrays and pointers are distinct Type variants in this subset, even
+    though C itself decays one to the other; no ArrayType/PointerType
+    special-casing is implemented, so this is INCOMPATIBLE."""
+    target = PointerType(PrimitiveType("int"))
+    source = ArrayType(PrimitiveType("int"), size=10)
+    assert is_assignable(target, source) is AssignResult.INCOMPATIBLE

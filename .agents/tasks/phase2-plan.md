@@ -37,7 +37,7 @@ into every name in it.
       semantic, resolving `struct Point` against the scope. → D15
 - [x] **P1.5** Wire `Expr.type_annotation`'s forward reference to the real `Type`
       under `TYPE_CHECKING`; remove the `# noqa: F821`.
-- [ ] **P1.6** Tests: every conversion pair in the rank table, pointer rules,
+- [x] **P1.6** Tests: every conversion pair in the rank table, pointer rules,
       `unknown` absorbing everything (D17), `__str__` for every variant.
 
 ## Stage 2 — Symbol table and scopes (≈6 commits)
