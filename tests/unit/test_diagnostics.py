@@ -2,8 +2,16 @@
 
 import json
 
-from clens.core.diagnostics import Diagnostic, DiagnosticCollector, Position, Severity
+from clens.core.diagnostics import (
+    Diagnostic,
+    DiagnosticCollector,
+    Position,
+    SemanticCode,
+    Severity,
+    diagnostic_from_span,
+)
 from clens.core.source import SourceFile
+from clens.core.token import Span
 
 
 def make_diagnostic(
@@ -100,3 +108,33 @@ def test_format_pretty_ignores_diagnostics_for_other_files():
     collector = DiagnosticCollector()
     collector.add(make_diagnostic("elsewhere", file="other.c"))
     assert collector.format_pretty(source) == ""
+
+
+def test_diagnostic_from_span_derives_end_position():
+    """Span carries a start line/column but not an end one; the helper must
+    derive the end position from the SourceFile rather than leaving it at the
+    start."""
+    source = SourceFile("int coutn;\n", "main.c")
+    span = Span(start_offset=4, end_offset=9, line=1, column=5)
+
+    d = diagnostic_from_span(
+        Severity.ERROR,
+        "undefined symbol 'coutn'",
+        "main.c",
+        span,
+        source,
+        code=SemanticCode.UNDEFINED_SYMBOL,
+    )
+
+    assert d.start == Position(1, 5, 4)
+    assert d.end == Position(1, 10, 9)
+    assert d.code == "S001"
+    assert d.severity is Severity.ERROR
+
+
+def test_semantic_code_registry_has_no_duplicate_values():
+    codes = [
+        v for k, v in vars(SemanticCode).items() if not k.startswith("_") and isinstance(v, str)
+    ]
+    assert len(codes) == len(set(codes))
+    assert codes  # the required-rows block must not be empty

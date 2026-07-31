@@ -11,6 +11,8 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import TYPE_CHECKING, Any
 
+from clens.core.token import Span
+
 if TYPE_CHECKING:
     from clens.core.source import SourceFile
 
@@ -120,3 +122,48 @@ def _format_one(diagnostic: Diagnostic, source: SourceFile) -> str:
     )
     body = f"  {gutter} | {line_text}"
     return "\n".join([header, body, caret_row])
+
+
+def diagnostic_from_span(
+    severity: Severity,
+    message: str,
+    file: str,
+    span: Span,
+    source_file: SourceFile,
+    code: str | None = None,
+) -> Diagnostic:
+    """Build a `Diagnostic` covering `span`.
+
+    `Span` carries the *start* line/column but not the end (see
+    `project/07-phase1-interfaces.md`), so the end position is derived from
+    `source_file`. Every Phase 2 pass should go through this rather than
+    re-deriving `Position` pairs inline.
+    """
+    end_line, end_column = source_file.offset_to_line_col(span.end_offset)
+    return Diagnostic(
+        severity=severity,
+        message=message,
+        file=file,
+        start=Position(span.line, span.column, span.start_offset),
+        end=Position(end_line, end_column, span.end_offset),
+        code=code,
+    )
+
+
+class SemanticCode:
+    """SEMANTIC diagnostic codes — S6.1's thirteen-row table, rows 5-13.
+
+    One registry so a code is never assigned twice. Codes beyond this table
+    (narrowing conversion, bad member operator, calling a non-function, ...)
+    continue the `S0xx` block here, in the order they are introduced.
+    """
+
+    UNDEFINED_SYMBOL = "S001"
+    ASSIGNMENT_TYPE_MISMATCH = "S002"
+    CALL_TYPE_MISMATCH = "S003"
+    DUPLICATE_DECLARATION = "S004"
+    ARGUMENT_COUNT_MISMATCH = "S005"
+    RETURN_TYPE_MISMATCH = "S006"
+    SHADOWED_DECLARATION = "S007"
+    USE_BEFORE_INITIALIZATION = "S008"
+    UNUSED_VARIABLE = "S009"
