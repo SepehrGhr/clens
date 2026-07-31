@@ -156,8 +156,17 @@ Phase 2's entry point mirrors these:
 ```python
 # languages/c/semantic.py
 def analyze(program: ast.Program, source: SourceFile,
-            diagnostics: DiagnosticCollector) -> SemanticModel
+            diagnostics: DiagnosticCollector,
+            tokens: list[Token] | None = None) -> SemanticModel
 ```
+
+`tokens` was added in Stage 5: `languages/c/queries.py`'s completion and hover
+both need the full token stream (including trivia — comments, whitespace),
+not just the significant view the parser consumes, for cursor context
+detection and doc-comment lookup. Optional and defaults to empty, since most
+callers (`clens check`, plain semantic analysis) never need it. `SemanticModel`
+also gained `tokens: list[Token]` and `diagnostics: DiagnosticCollector`
+fields to carry this.
 
 ## `clens.render`
 

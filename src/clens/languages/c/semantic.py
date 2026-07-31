@@ -21,6 +21,7 @@ from clens.languages.c.typecheck import type_check
 if TYPE_CHECKING:
     from clens.core.diagnostics import DiagnosticCollector
     from clens.core.source import SourceFile
+    from clens.core.token import Token
     from clens.languages.c.ast_nodes import Program
 
 __all__ = ["SemanticModel", "analyze"]
@@ -30,30 +31,49 @@ __all__ = ["SemanticModel", "analyze"]
 class SemanticModel:
     """The result of analyzing one file: the (now type-annotated) AST, the
     scope tree, and a flat name index over it.
+
+    `tokens` and `diagnostics` exist for `languages/c/queries.py` (Stage 5):
+    completion's context detection and hover's doc-comment lookup both need
+    the raw token stream (including trivia), not just the significant view
+    the parser consumed, and `diagnostics_of(model)` needs a diagnostics
+    collection to read from without re-running analysis.
     """
 
     program: Program
     global_scope: Scope
     source: SourceFile
+    diagnostics: DiagnosticCollector
     all_scopes: list[Scope] = field(default_factory=list)
     symbols_by_name: dict[str, list[Symbol]] = field(default_factory=dict)
+    tokens: list[Token] = field(default_factory=list)
 
 
 def analyze(
-    program: Program, source: SourceFile, diagnostics: DiagnosticCollector
+    program: Program,
+    source: SourceFile,
+    diagnostics: DiagnosticCollector,
+    tokens: list[Token] | None = None,
 ) -> SemanticModel:
     """Run name resolution (S2) then type checking (S4) over `program` and
     return the resulting `SemanticModel`. Mirrors `lexer.tokenize()` /
     `parser.parse()`: takes a `DiagnosticCollector` to add to, never raises,
     never returns `None`.
+
+    `tokens` is optional and defaults to empty: most callers (`clens check`,
+    plain semantic analysis) never need it, but a caller building a model
+    for completion or hover should pass the full token stream it already
+    has from `tokenize()` — `07-phase1-interfaces.md` is updated in this
+    same commit to reflect the added parameter.
     """
     global_scope, all_scopes, symbols_by_name = resolve(program, source, diagnostics)
     model = SemanticModel(
         program=program,
         global_scope=global_scope,
         source=source,
+        diagnostics=diagnostics,
         all_scopes=all_scopes,
         symbols_by_name=symbols_by_name,
+        tokens=tokens or [],
     )
     type_check(model, source, diagnostics)
     return model

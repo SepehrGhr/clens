@@ -116,11 +116,19 @@ into every name in it.
 
 → `skills/completion-engine`.
 
-- [ ] **P5.1** `core/queries.py` with `completions_at`, `hover_at`, `symbols_of`,
+- [x] **P5.1** `core/queries.py` with `completions_at`, `hover_at`, `symbols_of`,
       `diagnostics_of`. Pure functions over a `SemanticModel`. → D23
-- [ ] **P5.2** Context detection from the token preceding the cursor: member,
+      Lives in `languages/c/queries.py`, not `core/`: every function takes a
+      `SemanticModel`, which embeds the C AST — same layering reason as
+      `SemanticModel` and `resolve_type_spec`. `SemanticModel` also gained
+      `tokens` and `diagnostics` fields (07-phase1-interfaces.md updated in
+      the same commit): completion/hover need the full trivia-inclusive
+      token stream, and `diagnostics_of` needs somewhere to read from.
+- [x] **P5.2** Context detection from the token preceding the cursor: member,
       general, argument-list. `::` documented N/A. → S5.2
-- [ ] **P5.3** Member completion, including the S5.6 golden example (with
+      Token-based throughout (not AST-based): `p.` with nothing typed after
+      is a syntax error, and that's the normal mid-typing state.
+- [x] **P5.3** Member completion, including the S5.6 golden example (with
       `struct Point p;`, not the initializer-list form — see the note in S5.6).
 - [ ] **P5.4** General scope completion + parameter-type-guided completion inside an
       argument list. → S5.2
