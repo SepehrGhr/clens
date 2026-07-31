@@ -1,10 +1,11 @@
-"""`SemanticModel` — the artifact `analyze()` (Stage 3) returns and nothing
-ever discards (D19, S1.3). Completion, hover, and every later navigation
-feature read this object rather than re-deriving it.
+"""`analyze()` — the Phase 2 entry point mirroring `parser.parse()` — and
+`SemanticModel`, the artifact it returns and nothing ever discards (D19,
+S1.3). Completion, hover, and every later navigation feature read this
+object rather than re-deriving it.
 
-Lives in `languages/c/`, not `core/`, because it embeds `ast.Program`, a
-C-specific node — the same reason `resolve_type_spec` lives in
-`languages/c/typecheck.py` rather than `core/types.py`.
+`SemanticModel` lives in `languages/c/`, not `core/`, because it embeds
+`ast.Program`, a C-specific node — the same reason `resolve_type_spec` lives
+in `languages/c/typecheck.py` rather than `core/types.py`.
 """
 
 from __future__ import annotations
@@ -14,12 +15,14 @@ from typing import TYPE_CHECKING
 
 from clens.core.scopes import Scope
 from clens.core.symbols import Symbol
+from clens.languages.c.resolver import resolve
 
 if TYPE_CHECKING:
+    from clens.core.diagnostics import DiagnosticCollector
     from clens.core.source import SourceFile
     from clens.languages.c.ast_nodes import Program
 
-__all__ = ["SemanticModel"]
+__all__ = ["SemanticModel", "analyze"]
 
 
 @dataclass(slots=True)
@@ -33,3 +36,20 @@ class SemanticModel:
     source: SourceFile
     all_scopes: list[Scope] = field(default_factory=list)
     symbols_by_name: dict[str, list[Symbol]] = field(default_factory=dict)
+
+
+def analyze(
+    program: Program, source: SourceFile, diagnostics: DiagnosticCollector
+) -> SemanticModel:
+    """Run name resolution (S2) over `program` and assemble the resulting
+    `SemanticModel`. Mirrors `lexer.tokenize()` / `parser.parse()`: takes a
+    `DiagnosticCollector` to add to, never raises, never returns `None`.
+    """
+    global_scope, all_scopes, symbols_by_name = resolve(program, source, diagnostics)
+    return SemanticModel(
+        program=program,
+        global_scope=global_scope,
+        source=source,
+        all_scopes=all_scopes,
+        symbols_by_name=symbols_by_name,
+    )
