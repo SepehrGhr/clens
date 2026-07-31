@@ -31,7 +31,7 @@ into every name in it.
       compared, with a readable `__str__` (`"int"`, `"char*"`, `"(int) -> int"`) —
       that string is what hover and completion `detail` show. → S4.1, D16
 - [x] **P1.2** Rank table and `usual_arithmetic_conversion(a, b) -> Type`. → D18
-- [ ] **P1.3** `is_assignable(target, source) -> AssignResult` returning
+- [x] **P1.3** `is_assignable(target, source) -> AssignResult` returning
       ok / warn-narrowing / error, so callers do not re-derive severity. → S4.5
 - [ ] **P1.4** `resolve_type_spec(spec, scope) -> Type` — bridges syntactic to
       semantic, resolving `struct Point` against the scope. → D15

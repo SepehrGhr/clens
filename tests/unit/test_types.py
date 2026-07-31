@@ -10,11 +10,13 @@ from clens.core.ast_nodes import Node
 from clens.core.token import Span
 from clens.core.types import (
     ArrayType,
+    AssignResult,
     FunctionType,
     PointerType,
     PrimitiveType,
     StructType,
     UnknownType,
+    is_assignable,
     usual_arithmetic_conversion,
 )
 
@@ -99,3 +101,53 @@ def test_usual_arithmetic_conversion_unknown_absorbs_right():
 
 def test_usual_arithmetic_conversion_non_numeric_yields_unknown():
     assert usual_arithmetic_conversion(PrimitiveType("void"), PrimitiveType("int")) == UnknownType()
+
+
+@pytest.mark.parametrize("a_name,b_name", list(itertools.product(_RANK_ORDER, repeat=2)))
+def test_is_assignable_every_rank_pair(a_name, b_name):
+    """Widening (source rank <= target rank) is OK; narrowing is a warning,
+    never an error — S4.7's `int x = 3.14;` needs exactly this."""
+    target, source = PrimitiveType(a_name), PrimitiveType(b_name)
+    expected = (
+        AssignResult.OK
+        if _RANK_ORDER.index(b_name) <= _RANK_ORDER.index(a_name)
+        else AssignResult.NARROWING
+    )
+    assert is_assignable(target, source) is expected
+
+
+def test_is_assignable_identical_types_ok():
+    assert is_assignable(PrimitiveType("int"), PrimitiveType("int")) is AssignResult.OK
+    p = PointerType(PrimitiveType("char"))
+    assert is_assignable(p, PointerType(PrimitiveType("char"))) is AssignResult.OK
+
+
+def test_is_assignable_unknown_absorbs_both_directions():
+    assert is_assignable(UnknownType(), PrimitiveType("int")) is AssignResult.OK
+    assert is_assignable(PrimitiveType("int"), UnknownType()) is AssignResult.OK
+
+
+def test_is_assignable_pointer_int_mixing_is_incompatible():
+    """S4.7 golden example 2: char *s = 42; is an error, not a warning."""
+    target = PointerType(PrimitiveType("char"))
+    assert is_assignable(target, PrimitiveType("int")) is AssignResult.INCOMPATIBLE
+
+
+def test_is_assignable_int_to_pointer_is_incompatible_symmetrically():
+    assert (
+        is_assignable(PrimitiveType("int"), PointerType(PrimitiveType("char")))
+        is AssignResult.INCOMPATIBLE
+    )
+
+
+def test_is_assignable_struct_mismatch_is_incompatible():
+    decl_a = Node(span=SPAN)
+    decl_b = Node(span=Span(start_offset=10, end_offset=11, line=2, column=1))
+    assert is_assignable(StructType("Point", decl_a), StructType("Line", decl_b)) is (
+        AssignResult.INCOMPATIBLE
+    )
+
+
+def test_is_assignable_narrowing_golden_example():
+    """S4.7 golden example 1: int x = 3.14; is a warning."""
+    assert is_assignable(PrimitiveType("int"), PrimitiveType("double")) is AssignResult.NARROWING

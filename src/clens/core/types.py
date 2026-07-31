@@ -14,6 +14,7 @@ so it is user-facing output, not debug output.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from enum import Enum
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -21,12 +22,14 @@ if TYPE_CHECKING:
 
 __all__ = [
     "ArrayType",
+    "AssignResult",
     "FunctionType",
     "PointerType",
     "PrimitiveType",
     "StructType",
     "Type",
     "UnknownType",
+    "is_assignable",
     "usual_arithmetic_conversion",
 ]
 
@@ -136,3 +139,38 @@ def usual_arithmetic_conversion(a: Type, b: Type) -> Type:
     if rank_a is None or rank_b is None:
         return UnknownType()
     return a if rank_a >= rank_b else b
+
+
+class AssignResult(Enum):
+    """The outcome of `is_assignable`, so callers do not each re-derive the
+    severity from a bare bool."""
+
+    OK = "ok"
+    NARROWING = "narrowing"
+    INCOMPATIBLE = "incompatible"
+
+
+def is_assignable(target: Type, source: Type) -> AssignResult:
+    """Can a value of type `source` be assigned to a variable of type
+    `target`?
+
+    - `unknown` on either side is always `OK` (D17).
+    - Identical types are always `OK`.
+    - Numeric widening (`source` rank <= `target` rank) is `OK`; numeric
+      narrowing (e.g. `double` into `int`) is a `NARROWING` warning, not an
+      error — that is what `int x = 3.14;` requires (D18).
+    - Everything else (pointer/integer mixing, struct/pointer mismatches,
+      ...) is `INCOMPATIBLE`.
+    """
+    if isinstance(target, UnknownType) or isinstance(source, UnknownType):
+        return AssignResult.OK
+    if target == source:
+        return AssignResult.OK
+    if isinstance(target, PrimitiveType) and isinstance(source, PrimitiveType):
+        target_rank = _NUMERIC_RANK.get(target.name)
+        source_rank = _NUMERIC_RANK.get(source.name)
+        if target_rank is not None and source_rank is not None:
+            if source_rank <= target_rank:
+                return AssignResult.OK
+            return AssignResult.NARROWING
+    return AssignResult.INCOMPATIBLE
