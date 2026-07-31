@@ -92,9 +92,15 @@ def test_unary_expr_prefix_and_postfix_share_one_node_type():
 
 
 def test_member_expr_dot_vs_arrow():
-    dot = c_ast.MemberExpr(span=SPAN, obj=c_ast.Identifier(span=SPAN, name="p"), member="x")
+    dot = c_ast.MemberExpr(
+        span=SPAN, obj=c_ast.Identifier(span=SPAN, name="p"), member="x", member_span=SPAN
+    )
     arrow = c_ast.MemberExpr(
-        span=SPAN, obj=c_ast.Identifier(span=SPAN, name="p"), member="x", arrow=True
+        span=SPAN,
+        obj=c_ast.Identifier(span=SPAN, name="p"),
+        member="x",
+        member_span=SPAN,
+        arrow=True,
     )
     assert dot.arrow is False
     assert arrow.arrow is True

@@ -108,6 +108,22 @@ def test_postfix_chain_call_index_member_arrow():
     )
 
 
+def test_member_expr_member_span_is_just_the_name():
+    """member_span must cover only the field name, not the whole expression —
+    this has to hold even with whitespace/comments between '.' and the name,
+    where end_offset - len(member) would silently give the wrong answer."""
+    node, _ = parse_expr("p.x")
+    assert isinstance(node, ast.MemberExpr)
+    assert (node.member_span.start_offset, node.member_span.end_offset) == (2, 3)
+
+    spaced, _ = parse_expr("p /*c*/ . x")
+    assert isinstance(spaced, ast.MemberExpr)
+    start = spaced.member_span.start_offset
+    end = spaced.member_span.end_offset
+    assert spaced.member == "x"
+    assert (start, end) == (10, 11)
+
+
 def test_call_with_multiple_args():
     assert dump(parse_expr("f(1, 2, 3)")[0]) == ("call", "f", [1, 2, 3])
 

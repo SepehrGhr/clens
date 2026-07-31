@@ -240,6 +240,7 @@ class Parser(ParserBase):
             span=join(obj_expr.span, name_token.span),
             obj=obj_expr,
             member=name_token.lexeme,
+            member_span=name_token.span,
             arrow=(op_token.lexeme == "->"),
         )
 

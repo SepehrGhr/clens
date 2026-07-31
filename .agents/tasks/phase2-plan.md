@@ -15,7 +15,7 @@ into every name in it.
 - [x] **P0.1** Drop in the Phase 2 agent environment; commit it.
 - [x] **P0.2** Run `pytest` and walk `checklists/phase1-acceptance.md`. Everything
       must still be green **before** any Phase 2 code. Fix anything that is not.
-- [ ] **P0.3** Add `MemberExpr.member_span: Span` — parser, node, tests, and the
+- [x] **P0.3** Add `MemberExpr.member_span: Span` — parser, node, tests, and the
       golden AST snapshot. → `project/07-phase1-interfaces.md` gap 1
 - [ ] **P0.4** Add `CallExpr.callee_span: Span`. Same treatment. → gap 2
 - [ ] **P0.5** Add `diagnostic_from_span(...)` helper to `core/diagnostics.py`, and

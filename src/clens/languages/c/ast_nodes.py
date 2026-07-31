@@ -328,6 +328,7 @@ class MemberExpr(Expr):
 
     obj: Expr
     member: str
+    member_span: Span
     arrow: bool = False
 
     INLINE_FIELDS: ClassVar[tuple[str, ...]] = ("member", "arrow")
