@@ -2,6 +2,10 @@
 conversion, and assignability.
 """
 
+import itertools
+
+import pytest
+
 from clens.core.ast_nodes import Node
 from clens.core.token import Span
 from clens.core.types import (
@@ -11,9 +15,12 @@ from clens.core.types import (
     PrimitiveType,
     StructType,
     UnknownType,
+    usual_arithmetic_conversion,
 )
 
 SPAN = Span(start_offset=0, end_offset=1, line=1, column=1)
+
+_RANK_ORDER = ["char", "int", "float", "double"]
 
 
 def test_primitive_str_is_bare_name():
@@ -72,3 +79,23 @@ def test_unknown_type_instances_are_all_equal():
 def test_types_are_hashable():
     seen = {PrimitiveType("int"), PointerType(PrimitiveType("int")), UnknownType()}
     assert len(seen) == 3
+
+
+@pytest.mark.parametrize("a_name,b_name", list(itertools.product(_RANK_ORDER, repeat=2)))
+def test_usual_arithmetic_conversion_every_rank_pair(a_name, b_name):
+    """D18: the operand with the higher rank wins, e.g. int + double -> double."""
+    a, b = PrimitiveType(a_name), PrimitiveType(b_name)
+    winner = a_name if _RANK_ORDER.index(a_name) >= _RANK_ORDER.index(b_name) else b_name
+    assert str(usual_arithmetic_conversion(a, b)) == winner
+
+
+def test_usual_arithmetic_conversion_unknown_absorbs_left():
+    assert usual_arithmetic_conversion(UnknownType(), PrimitiveType("int")) == UnknownType()
+
+
+def test_usual_arithmetic_conversion_unknown_absorbs_right():
+    assert usual_arithmetic_conversion(PrimitiveType("int"), UnknownType()) == UnknownType()
+
+
+def test_usual_arithmetic_conversion_non_numeric_yields_unknown():
+    assert usual_arithmetic_conversion(PrimitiveType("void"), PrimitiveType("int")) == UnknownType()

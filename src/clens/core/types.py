@@ -27,6 +27,7 @@ __all__ = [
     "StructType",
     "Type",
     "UnknownType",
+    "usual_arithmetic_conversion",
 ]
 
 
@@ -109,3 +110,29 @@ class UnknownType(Type):
 
     def __str__(self) -> str:
         return "unknown"
+
+
+# --- Conversion rank (D18) ---------------------------------------------------
+
+_NUMERIC_RANK: dict[str, int] = {"char": 0, "int": 1, "float": 2, "double": 3}
+
+
+def usual_arithmetic_conversion(a: Type, b: Type) -> Type:
+    """The type a binary numeric operation promotes `a` and `b` to.
+
+    Defined for the four numeric primitives (`char < int < float < double`):
+    the operand with the higher rank wins, e.g. `int + double` -> `double`.
+    `unknown` absorbs either operand (D17). Any other combination (a pointer,
+    a struct, `void`) is not this function's call to make — the caller
+    classifies those itself (pointer arithmetic, `void`-in-operand errors,
+    etc.) before ever reaching here; this returns `unknown` for them rather
+    than raising, so a caller that gets the classification wrong fails safe
+    instead of crashing.
+    """
+    if isinstance(a, UnknownType) or isinstance(b, UnknownType):
+        return UnknownType()
+    rank_a = _NUMERIC_RANK.get(a.name) if isinstance(a, PrimitiveType) else None
+    rank_b = _NUMERIC_RANK.get(b.name) if isinstance(b, PrimitiveType) else None
+    if rank_a is None or rank_b is None:
+        return UnknownType()
+    return a if rank_a >= rank_b else b
