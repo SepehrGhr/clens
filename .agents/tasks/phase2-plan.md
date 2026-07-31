@@ -58,7 +58,7 @@ into every name in it.
       annotated AST. → D19
       Lives in `languages/c/semantic.py`, not `core/`: it embeds `ast.Program`
       (C-specific), same layering reason as `resolve_type_spec`.
-- [ ] **P2.5** Tests for nesting, shadowing lookups, offset queries at scope
+- [x] **P2.5** Tests for nesting, shadowing lookups, offset queries at scope
       boundaries (first char, last char, one past the end).
 - [ ] **P2.6** `clens symbols <file>` CLI command + `--json`. → S8.1
       Deferred to Stage 3: needs `analyze()` (P3.1-P3.2) to produce a real

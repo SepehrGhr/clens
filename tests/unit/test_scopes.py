@@ -106,6 +106,19 @@ def test_three_levels_of_nesting_resolve_correctly():
     assert block.lookup("g") is not None
 
 
+def test_for_init_scope_holds_the_loop_variable_and_wraps_the_body():
+    """for (int i = 0; ...) { ... } - FOR_INIT holds `i`, and the body block
+    nests inside it, so `i` is visible from within the loop body."""
+    global_scope = Scope(kind=ScopeKind.GLOBAL, parent=None, span=SPAN)
+    for_init = Scope(kind=ScopeKind.FOR_INIT, parent=global_scope, span=SPAN)
+    i_symbol = make_symbol("i", for_init)
+    for_init.declare(i_symbol)
+
+    body = Scope(kind=ScopeKind.BLOCK, parent=for_init, span=SPAN)
+
+    assert body.lookup("i") is i_symbol
+
+
 def test_struct_scope_fields_are_visible_locally():
     global_scope = Scope(kind=ScopeKind.GLOBAL, parent=None, span=SPAN)
     struct_scope = Scope(kind=ScopeKind.STRUCT, parent=global_scope, span=SPAN)
