@@ -167,3 +167,9 @@ class SemanticCode:
     SHADOWED_DECLARATION = "S007"
     USE_BEFORE_INITIALIZATION = "S008"
     UNUSED_VARIABLE = "S009"
+
+    # Beyond the required thirteen rows (S4), introduced in this order:
+    NARROWING_CONVERSION = "S010"
+    BAD_MEMBER_ACCESS = "S011"
+    NOT_CALLABLE = "S012"
+    TERNARY_TYPE_MISMATCH = "S013"

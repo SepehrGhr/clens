@@ -89,15 +89,24 @@ into every name in it.
 
 → `skills/type-system`.
 
-- [ ] **P4.1** Expression typing walk: literals, identifiers, unary, binary,
+- [x] **P4.1** Expression typing walk: literals, identifiers, unary, binary,
       ternary, assignment, index, sizeof. Every node annotated. → S4.1–S4.3
-- [ ] **P4.2** `MemberExpr`: resolve the field against the struct's scope; `.` on a
+- [x] **P4.2** `MemberExpr`: resolve the field against the struct's scope; `.` on a
       pointer and `->` on a non-pointer are errors with distinct messages.
-- [ ] **P4.3** `CallExpr`: arity check (row 9), per-argument type check (row 7),
+- [x] **P4.3** `CallExpr`: arity check (row 9), per-argument type check (row 7),
       calling a non-function, calling an undefined function. → S4.4
-- [ ] **P4.4** Assignment checking, including the narrowing warning. → S4.5
-- [ ] **P4.5** Return checking against the enclosing function, including `void`
+- [x] **P4.4** Assignment checking, including the narrowing warning. → S4.5
+- [x] **P4.5** Return checking against the enclosing function, including `void`
       returning a value and a non-void with a bare `return`. → S4.6
+      P4.1-P4.5 landed as one commit: `_TypeChecker` in `languages/c/typecheck.py`
+      is a single cohesive walk over the already name-resolved `SemanticModel`,
+      not five separable pieces. Ternary mismatch also got its own code
+      (S013, TERNARY_TYPE_MISMATCH) since the skill explicitly calls it an
+      error, alongside narrowing (S010), bad member access (S011, covering
+      both swapped operators and unknown fields), and non-callable (S012).
+      Binary/unary/index operand combinations the course document doesn't
+      explicitly call out (e.g. `struct + int`, indexing a non-array) degrade
+      to `unknown` silently rather than inventing new diagnostics.
 - [ ] **P4.6** **The four golden examples from S4.7**, as one test file, asserting
       exact severities: warning, error, error, error.
 - [ ] **P4.7** No-cascade test: a file with one undefined symbol used five times

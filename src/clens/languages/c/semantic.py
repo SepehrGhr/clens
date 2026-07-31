@@ -16,6 +16,7 @@ from typing import TYPE_CHECKING
 from clens.core.scopes import Scope
 from clens.core.symbols import Symbol
 from clens.languages.c.resolver import resolve
+from clens.languages.c.typecheck import type_check
 
 if TYPE_CHECKING:
     from clens.core.diagnostics import DiagnosticCollector
@@ -41,15 +42,18 @@ class SemanticModel:
 def analyze(
     program: Program, source: SourceFile, diagnostics: DiagnosticCollector
 ) -> SemanticModel:
-    """Run name resolution (S2) over `program` and assemble the resulting
-    `SemanticModel`. Mirrors `lexer.tokenize()` / `parser.parse()`: takes a
-    `DiagnosticCollector` to add to, never raises, never returns `None`.
+    """Run name resolution (S2) then type checking (S4) over `program` and
+    return the resulting `SemanticModel`. Mirrors `lexer.tokenize()` /
+    `parser.parse()`: takes a `DiagnosticCollector` to add to, never raises,
+    never returns `None`.
     """
     global_scope, all_scopes, symbols_by_name = resolve(program, source, diagnostics)
-    return SemanticModel(
+    model = SemanticModel(
         program=program,
         global_scope=global_scope,
         source=source,
         all_scopes=all_scopes,
         symbols_by_name=symbols_by_name,
     )
+    type_check(model, source, diagnostics)
+    return model
