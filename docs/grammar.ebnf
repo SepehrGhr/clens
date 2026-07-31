@@ -34,11 +34,14 @@ program            = { external_decl } ;
 
 external_decl      = func_decl | struct_decl | var_decl_stmt ;
 
-func_decl          = type_spec , identifier , "(" , [ param_list ] , ")" ,
-                      ( block | ";" ) ;
+func_decl          = type_spec , identifier , "(" ,
+                      ( "void" | [ param_list ] ) , ")" , ( block | ";" ) ;
                       (* a body makes it a definition; ";" makes it a
                          prototype — both parse to the same FuncDecl node,
-                         with body = None for a prototype *)
+                         with body = None for a prototype.
+                         "(void)" and "()" both mean zero parameters; "(void)"
+                         is matched specially so "void" is not mistaken for
+                         a parameter's type with a missing name. *)
 
 param_list         = param , { "," , param } ;
 param              = type_spec , identifier , [ "[" , [ int_lit ] , "]" ] ;

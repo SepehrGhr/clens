@@ -36,8 +36,8 @@ _UNARY_PREFIX_OPS = frozenset({"-", "!", "&", "*", "~", "++", "--"})
 _POSTFIX_INCDEC_OPS = frozenset({"++", "--"})
 _MEMBER_OPS = frozenset({".", "->"})
 
-#: Keywords that start a type-spec — shared with declaration parsing (added
-#: in a later commit) and with sizeof's type-vs-expression disambiguation.
+#: Keywords that start a type-spec — shared between declaration parsing and
+#: sizeof's type-vs-expression disambiguation.
 BASE_TYPE_KEYWORDS = frozenset({"void", "char", "int", "float", "double"})
 STORAGE_KEYWORDS = frozenset({"static", "extern", "volatile", "register"})
 _TYPE_START_KEYWORDS = BASE_TYPE_KEYWORDS | STORAGE_KEYWORDS | {"struct", "const"}
@@ -99,13 +99,18 @@ class Parser(ParserBase):
 
     def parse_assignment_expr(self) -> ast.Expr:
         left = self.parse_ternary_expr()
-        if self.check(TokenType.OPERATOR) and self.peek().lexeme in _ASSIGN_OPS:
-            op_token = self.advance()
+        op_token = self.parse_assign_op()
+        if op_token is not None:
             value = self.parse_assignment_expr()  # right-associative
             return ast.AssignExpr(
                 span=join(left.span, value.span), op=op_token.lexeme, target=left, value=value
             )
         return left
+
+    def parse_assign_op(self) -> Token | None:
+        if self.check(TokenType.OPERATOR) and self.peek().lexeme in _ASSIGN_OPS:
+            return self.advance()
+        return None
 
     def parse_ternary_expr(self) -> ast.Expr:
         condition = self.parse_logical_or_expr()
@@ -180,36 +185,47 @@ class Parser(ParserBase):
     def parse_postfix_expr(self) -> ast.Expr:
         expr = self.parse_primary_expr()
         while True:
-            if (
-                self.check(TokenType.DELIMITER)
-                and self.peek().lexeme == "("
-                and isinstance(expr, ast.Identifier)
-            ):
-                expr = self._parse_call(expr)
-            elif self.check(TokenType.DELIMITER) and self.peek().lexeme == "[":
-                expr = self._parse_index(expr)
-            elif self.check(TokenType.OPERATOR) and self.peek().lexeme in _MEMBER_OPS:
-                expr = self._parse_member(expr)
-            elif self.check(TokenType.OPERATOR) and self.peek().lexeme in _POSTFIX_INCDEC_OPS:
-                op_token = self.advance()
-                expr = ast.UnaryExpr(
-                    span=join(expr.span, op_token.span),
-                    op=op_token.lexeme,
-                    operand=expr,
-                    prefix=False,
-                )
-            else:
+            updated = self.parse_postfix_op(expr)
+            if updated is None:
                 return expr
+            expr = updated
+
+    def parse_postfix_op(self, expr: ast.Expr) -> ast.Expr | None:
+        """Try to consume one postfix suffix onto `expr`. Returns the
+        updated expression, or None if the current token starts no postfix
+        operator (the `{ postfix_op }` loop in `parse_postfix_expr` stops
+        there).
+        """
+        if (
+            self.check(TokenType.DELIMITER)
+            and self.peek().lexeme == "("
+            and isinstance(expr, ast.Identifier)
+        ):
+            return self._parse_call(expr)
+        if self.check(TokenType.DELIMITER) and self.peek().lexeme == "[":
+            return self._parse_index(expr)
+        if self.check(TokenType.OPERATOR) and self.peek().lexeme in _MEMBER_OPS:
+            return self._parse_member(expr)
+        if self.check(TokenType.OPERATOR) and self.peek().lexeme in _POSTFIX_INCDEC_OPS:
+            op_token = self.advance()
+            return ast.UnaryExpr(
+                span=join(expr.span, op_token.span), op=op_token.lexeme, operand=expr, prefix=False
+            )
+        return None
 
     def _parse_call(self, callee: ast.Identifier) -> ast.CallExpr:
         self.advance()  # "("
-        args: list[ast.Expr] = []
-        if not (self.check(TokenType.DELIMITER) and self.peek().lexeme == ")"):
-            args.append(self.parse_assignment_expr())
-            while self.match_lexeme(","):
-                args.append(self.parse_assignment_expr())
+        args = self.parse_arg_list()
         close = self.expect(TokenType.DELIMITER, ")", "to close argument list")
         return ast.CallExpr(span=join(callee.span, close.span), callee=callee.name, args=args)
+
+    def parse_arg_list(self) -> list[ast.Expr]:
+        if self.check(TokenType.DELIMITER) and self.peek().lexeme == ")":
+            return []
+        args = [self.parse_assignment_expr()]
+        while self.match_lexeme(","):
+            args.append(self.parse_assignment_expr())
+        return args
 
     def _parse_index(self, array_expr: ast.Expr) -> ast.IndexExpr:
         self.advance()  # "["
@@ -340,14 +356,7 @@ class Parser(ParserBase):
         for_token = self.advance()  # "for"
         self.expect(TokenType.DELIMITER, "(", "after 'for'")
 
-        init: ast.Stmt | list[ast.VarDecl] | None = None
-        if _is_type_start(self.peek()):
-            init = self.parse_var_decl_stmt()  # list[VarDecl]; consumes its own ';'
-        else:
-            if not self.check_lexeme(";"):
-                init_expr = self.parse_expression()
-                init = ast.ExprStmt(span=init_expr.span, expr=init_expr)
-            self.expect(TokenType.DELIMITER, ";", "after 'for' initializer")
+        init = self.parse_for_init()
 
         condition: ast.Expr | None = None
         if not self.check_lexeme(";"):
@@ -367,6 +376,20 @@ class Parser(ParserBase):
             update=update,
             body=body,
         )
+
+    def parse_for_init(self) -> ast.Stmt | list[ast.VarDecl] | None:
+        """`for_init = var_decl_stmt | expression`, given the leading `(`
+        already consumed. Consumes the clause-terminating `;` either way
+        (`var_decl_stmt` consumes its own).
+        """
+        if _is_type_start(self.peek()):
+            return self.parse_var_decl_stmt()  # list[VarDecl]; consumes its own ';'
+        init: ast.Stmt | None = None
+        if not self.check_lexeme(";"):
+            init_expr = self.parse_expression()
+            init = ast.ExprStmt(span=init_expr.span, expr=init_expr)
+        self.expect(TokenType.DELIMITER, ";", "after 'for' initializer")
+        return init
 
     def parse_return_stmt(self) -> ast.Stmt:
         return_token = self.advance()  # "return"
@@ -391,29 +414,18 @@ class Parser(ParserBase):
     def parse_type_spec(self) -> ast.TypeSpec:
         start_token = self.peek()
         storage: str | None = None
-        while self.check(TokenType.KEYWORD) and self.peek().lexeme in STORAGE_KEYWORDS:
-            storage = self.advance().lexeme
+        while True:
+            qualifier = self.parse_storage_qualifier()
+            if qualifier is None:
+                break
+            storage = qualifier.lexeme
 
         is_const = False
         if self.check_lexeme("const"):
             self.advance()
             is_const = True
 
-        struct_name_span: ast.Span | None = None
-        if self.check_lexeme("struct"):
-            self.advance()
-            name_token = self.expect_type(TokenType.IDENT, "struct tag name")
-            base, struct_name, struct_name_span, end_token = (
-                "struct",
-                name_token.lexeme,
-                name_token.span,
-                name_token,
-            )
-        elif self.check(TokenType.KEYWORD) and self.peek().lexeme in BASE_TYPE_KEYWORDS:
-            base_token = self.advance()
-            base, struct_name, end_token = base_token.lexeme, None, base_token
-        else:
-            self.fail(f"expected a type, got {self._describe_current()}")
+        base, struct_name, struct_name_span, end_token = self.parse_base_type()
 
         pointer_depth = 0
         while self.check_lexeme("*"):
@@ -429,6 +441,26 @@ class Parser(ParserBase):
             is_const=is_const,
             storage=storage,
         )
+
+    def parse_storage_qualifier(self) -> Token | None:
+        if self.check(TokenType.KEYWORD) and self.peek().lexeme in STORAGE_KEYWORDS:
+            return self.advance()
+        return None
+
+    def parse_base_type(self) -> tuple[str, str | None, ast.Span | None, Token]:
+        """`base_type = "void" | "char" | "int" | "float" | "double" |
+        ("struct" identifier)`. Returns `(base, struct_name,
+        struct_name_span, last_token)`; `struct_name`/`struct_name_span`
+        are `None` for the non-struct forms.
+        """
+        if self.check_lexeme("struct"):
+            self.advance()
+            name_token = self.expect_type(TokenType.IDENT, "struct tag name")
+            return "struct", name_token.lexeme, name_token.span, name_token
+        if self.check(TokenType.KEYWORD) and self.peek().lexeme in BASE_TYPE_KEYWORDS:
+            base_token = self.advance()
+            return base_token.lexeme, None, None, base_token
+        self.fail(f"expected a type, got {self._describe_current()}")
 
     def _parse_array_suffix(self) -> tuple[ast.Expr | None, Token]:
         """`"[" [int_lit] "]"`, given the '[' has already been checked (not
@@ -468,7 +500,7 @@ class Parser(ParserBase):
             params.append(self.parse_param())
         return params
 
-    def _finish_declarator(self, base_type: ast.TypeSpec, name_token: Token) -> ast.VarDecl:
+    def parse_declarator(self, base_type: ast.TypeSpec, name_token: Token) -> ast.VarDecl:
         array = False
         array_size: ast.Expr | None = None
         last_span = name_token.span
@@ -494,10 +526,10 @@ class Parser(ParserBase):
         """The rest of `declarator , { "," , declarator } , ";"`, given
         `base_type` and the first declarator's name already parsed.
         """
-        decls = [self._finish_declarator(base_type, first_name)]
+        decls = [self.parse_declarator(base_type, first_name)]
         while self.match_lexeme(","):
             name_token = self.expect_type(TokenType.IDENT, "declarator name")
-            decls.append(self._finish_declarator(base_type, name_token))
+            decls.append(self.parse_declarator(base_type, name_token))
         self.expect(TokenType.DELIMITER, ";", "after variable declaration")
         return decls
 
@@ -506,7 +538,7 @@ class Parser(ParserBase):
         name_token = self.expect_type(TokenType.IDENT, "declarator name")
         return self.parse_var_decl_list(type_spec, name_token)
 
-    def _finish_func_decl(self, return_type: ast.TypeSpec, name_token: Token) -> ast.FuncDecl:
+    def parse_func_decl(self, return_type: ast.TypeSpec, name_token: Token) -> ast.FuncDecl:
         self.advance()  # "("
         params: list[ast.Param] = []
         if self.check_lexeme("void") and self.peek(1).lexeme == ")":
@@ -575,7 +607,7 @@ class Parser(ParserBase):
         type_spec = self.parse_type_spec()
         name_token = self.expect_type(TokenType.IDENT, "declared name")
         if self.check_lexeme("("):
-            return [self._finish_func_decl(type_spec, name_token)]
+            return [self.parse_func_decl(type_spec, name_token)]
         return list(self.parse_var_decl_list(type_spec, name_token))
 
     # ---- Program (entry production) ----------------------------------
