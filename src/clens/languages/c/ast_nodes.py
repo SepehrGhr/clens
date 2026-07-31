@@ -308,6 +308,7 @@ class TernaryExpr(Expr):
 @dataclass(slots=True, kw_only=True)
 class CallExpr(Expr):
     callee: str
+    callee_span: Span
     args: list[Expr] = field(default_factory=list)
 
     INLINE_FIELDS: ClassVar[tuple[str, ...]] = ("callee",)

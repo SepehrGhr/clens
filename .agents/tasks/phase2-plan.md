@@ -17,7 +17,7 @@ into every name in it.
       must still be green **before** any Phase 2 code. Fix anything that is not.
 - [x] **P0.3** Add `MemberExpr.member_span: Span` — parser, node, tests, and the
       golden AST snapshot. → `project/07-phase1-interfaces.md` gap 1
-- [ ] **P0.4** Add `CallExpr.callee_span: Span`. Same treatment. → gap 2
+- [x] **P0.4** Add `CallExpr.callee_span: Span`. Same treatment. → gap 2
 - [ ] **P0.5** Add `diagnostic_from_span(...)` helper to `core/diagnostics.py`, and
       a `SEMANTIC` error-code block (`S001`…). Retrofit nothing in Phase 1 — just
       make the helper available. → `skills/diagnostics`

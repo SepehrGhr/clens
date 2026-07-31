@@ -33,7 +33,9 @@ def test_golden_factorial_line_3_ast():
     inner_right = c.IntLiteral(span=span(3, 30), value=1)
     inner_binary = c.BinaryExpr(span=span(3, 26), op="-", left=inner_left, right=inner_right)
 
-    call = c.CallExpr(span=span(3, 16), callee="factorial", args=[inner_binary])
+    call = c.CallExpr(
+        span=span(3, 16), callee="factorial", callee_span=span(3, 16), args=[inner_binary]
+    )
     outer_left = c.Identifier(span=span(3, 12), name="n")
     outer_binary = c.BinaryExpr(span=span(3, 12), op="*", left=outer_left, right=call)
 
@@ -71,6 +73,7 @@ def test_list_of_node_fields_expand_with_index_labels():
     call = c.CallExpr(
         span=span(1, 1),
         callee="f",
+        callee_span=span(1, 1),
         args=[
             c.IntLiteral(span=span(1, 3), value=1),
             c.IntLiteral(span=span(1, 6), value=2),

@@ -124,6 +124,12 @@ def test_member_expr_member_span_is_just_the_name():
     assert (start, end) == (10, 11)
 
 
+def test_call_expr_callee_span_covers_only_the_name():
+    node, _ = parse_expr("factorial(n - 1)")
+    assert isinstance(node, ast.CallExpr)
+    assert (node.callee_span.start_offset, node.callee_span.end_offset) == (0, 9)
+
+
 def test_call_with_multiple_args():
     assert dump(parse_expr("f(1, 2, 3)")[0]) == ("call", "f", [1, 2, 3])
 

@@ -217,7 +217,12 @@ class Parser(ParserBase):
         self.advance()  # "("
         args = self.parse_arg_list()
         close = self.expect(TokenType.DELIMITER, ")", "to close argument list")
-        return ast.CallExpr(span=join(callee.span, close.span), callee=callee.name, args=args)
+        return ast.CallExpr(
+            span=join(callee.span, close.span),
+            callee=callee.name,
+            callee_span=callee.span,
+            args=args,
+        )
 
     def parse_arg_list(self) -> list[ast.Expr]:
         if self.check(TokenType.DELIMITER) and self.peek().lexeme == ")":

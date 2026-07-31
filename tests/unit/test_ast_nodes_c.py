@@ -76,7 +76,10 @@ def test_multiple_declarators_are_sibling_var_decls_not_wrapped():
 
 def test_call_expr_callee_is_a_plain_string_not_a_node():
     call = c_ast.CallExpr(
-        span=SPAN, callee="factorial", args=[c_ast.IntLiteral(span=SPAN, value=1)]
+        span=SPAN,
+        callee="factorial",
+        callee_span=SPAN,
+        args=[c_ast.IntLiteral(span=SPAN, value=1)],
     )
     assert call.callee == "factorial"
     assert isinstance(call.args[0], Expr)
