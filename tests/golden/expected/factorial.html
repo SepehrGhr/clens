@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>clens</title>
+<style>
+pre { background: #1E1E1E; color: #D4D4D4; padding: 1em; font-family: Consolas, Menlo, 'Fira Code', monospace; font-size: 14px; line-height: 1.5; overflow-x: auto; white-space: pre; }
+.keyword { color: #569CD6; font-weight: bold; }
+.type { color: #4EC9B0; }
+.variable { color: #D4D4D4; }
+.function { color: #DCDCAA; }
+.type_name { color: #3FB950; }
+.number { color: #CE9178; }
+.string { color: #B5CEA8; }
+.boolean { color: #CE9178; }
+.operator { color: #C0C0C0; }
+.comment { color: #808080; font-style: italic; }
+.preprocessor { color: #C586C0; }
+.error { color: #F44747; text-decoration: underline; }
+</style>
+</head>
+<body>
+<pre><span class="type">int</span> <span class="function">factorial</span>(<span class="type">int</span> <span class="variable">n</span>) {
+    <span class="keyword">if</span> (<span class="variable">n</span> <span class="operator">&lt;=</span> <span class="number">1</span>) <span class="keyword">return</span> <span class="number">1</span>;
+    <span class="keyword">return</span> <span class="variable">n</span> <span class="operator">*</span> <span class="function">factorial</span>(<span class="variable">n</span> <span class="operator">-</span> <span class="number">1</span>);
+}
+</pre>
+</body>
+</html>
