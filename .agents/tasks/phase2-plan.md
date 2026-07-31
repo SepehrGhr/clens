@@ -33,7 +33,7 @@ into every name in it.
 - [x] **P1.2** Rank table and `usual_arithmetic_conversion(a, b) -> Type`. → D18
 - [x] **P1.3** `is_assignable(target, source) -> AssignResult` returning
       ok / warn-narrowing / error, so callers do not re-derive severity. → S4.5
-- [ ] **P1.4** `resolve_type_spec(spec, scope) -> Type` — bridges syntactic to
+- [x] **P1.4** `resolve_type_spec(spec, scope) -> Type` — bridges syntactic to
       semantic, resolving `struct Point` against the scope. → D15
 - [ ] **P1.5** Wire `Expr.type_annotation`'s forward reference to the real `Type`
       under `TYPE_CHECKING`; remove the `# noqa: F821`.
