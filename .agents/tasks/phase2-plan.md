@@ -26,7 +26,7 @@ into every name in it.
 
 → `skills/type-system`.
 
-- [ ] **P1.1** `core/types.py`: `Type` base, `PrimitiveType`, `PointerType`,
+- [x] **P1.1** `core/types.py`: `Type` base, `PrimitiveType`, `PointerType`,
       `ArrayType`, `StructType`, `FunctionType`, `UnknownType`. Frozen, structurally
       compared, with a readable `__str__` (`"int"`, `"char*"`, `"(int) -> int"`) —
       that string is what hover and completion `detail` show. → S4.1, D16
