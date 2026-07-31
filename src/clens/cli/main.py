@@ -217,7 +217,8 @@ def _cmd_highlight(source: SourceFile, args: argparse.Namespace) -> tuple[str, D
 
 def _cmd_check(source: SourceFile, args: argparse.Namespace) -> tuple[str, DiagnosticCollector]:
     diagnostics = DiagnosticCollector()
-    _tokenize_and_parse(source, diagnostics)
+    tokens, program = _tokenize_and_parse(source, diagnostics)
+    analyze(program, source, diagnostics, tokens=tokens)
     if args.json:
         return diagnostics.to_json(), diagnostics
     if not diagnostics.diagnostics:

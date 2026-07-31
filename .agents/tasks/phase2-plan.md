@@ -158,8 +158,11 @@ into every name in it.
       when the expected lexeme is `)`/`}`/`]`, else `fail()` defaults to
       `E010-unexpected-token`. Verified the full suite (Phase 1 included) stays
       green — no test asserted `code is None` for a parser diagnostic.
-- [ ] **P6.3** `clens check` now runs lexer + parser + semantic in one pass, sorted,
+- [x] **P6.3** `clens check` now runs lexer + parser + semantic in one pass, sorted,
       deduplicated. → S8.1
+      Sorting/dedup was already `DiagnosticCollector.sorted()`'s job (used by both
+      `to_json()` and `format_pretty()`); the actual gap was `_cmd_check` never
+      calling `analyze()` at all.
 - [ ] **P6.4** `clens complete` and `clens hover` CLI commands + `--json`. → S8.1
 
 ## Stage 7 — Web UI (≈7 commits)

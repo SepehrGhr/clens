@@ -136,6 +136,25 @@ def test_check_command_json(tmp_path, capsys):
     assert payload[0]["severity"] == "error"
 
 
+def test_check_command_runs_semantic_analysis_too(tmp_path, capsys):
+    """P6.3: check now runs lexer + parser + semantic in one pass - a
+    file with no lexical/syntax errors but a real type error must still
+    be caught, not just the earlier phases."""
+    path = write(tmp_path, "a.c", "void f(void) { return 5; }\n")
+    code = main(["check", path])
+    out = capsys.readouterr().out
+    assert code == 1
+    assert "void function should not return a value" in out
+
+
+def test_check_command_semantic_warning_does_not_fail_exit_code(tmp_path, capsys):
+    path = write(tmp_path, "a.c", "int x = 3.14;\n")
+    code = main(["check", path])
+    out = capsys.readouterr().out
+    assert code == 0
+    assert "may lose precision" in out
+
+
 # --- symbols (S8.1) -----------------------------------------------------------
 
 
