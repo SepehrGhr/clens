@@ -2,7 +2,7 @@
 exclusion from the lexical chain.
 """
 
-from clens.core.scopes import Scope, ScopeKind
+from clens.core.scopes import Scope, ScopeKind, scope_at, symbols_visible_at
 from clens.core.symbols import Symbol, SymbolKind
 from clens.core.token import Span
 from clens.core.types import PrimitiveType
@@ -141,3 +141,104 @@ def test_struct_scope_parented_for_tree_display_only():
 
     assert struct_scope in global_scope.children
     assert struct_scope.parent is global_scope
+
+
+def make_span_range(start: int, end: int) -> Span:
+    return Span(start_offset=start, end_offset=end, line=1, column=start + 1)
+
+
+def build_nested_tree() -> tuple[Scope, Scope, Scope]:
+    """global(0,100) -> function(10,20) -> block(12,18)."""
+    global_scope = Scope(kind=ScopeKind.GLOBAL, parent=None, span=make_span_range(0, 100))
+    function_scope = Scope(
+        kind=ScopeKind.FUNCTION, parent=global_scope, span=make_span_range(10, 20)
+    )
+    block = Scope(kind=ScopeKind.BLOCK, parent=function_scope, span=make_span_range(12, 18))
+    global_scope.children.append(function_scope)
+    function_scope.children.append(block)
+    return global_scope, function_scope, block
+
+
+def test_scope_at_first_char_of_a_scope():
+    global_scope, function_scope, block = build_nested_tree()
+    assert scope_at(global_scope, 12) is block
+
+
+def test_scope_at_last_char_of_a_scope():
+    """end_offset is exclusive; the last real character is end_offset - 1."""
+    global_scope, function_scope, block = build_nested_tree()
+    assert scope_at(global_scope, 17) is block
+
+
+def test_scope_at_one_past_the_end_falls_to_enclosing_scope():
+    global_scope, function_scope, block = build_nested_tree()
+    assert scope_at(global_scope, 18) is function_scope
+
+
+def test_scope_at_outside_any_child_returns_root():
+    global_scope, function_scope, block = build_nested_tree()
+    assert scope_at(global_scope, 5) is global_scope
+    assert scope_at(global_scope, 25) is global_scope
+
+
+def test_scope_at_deepest_nested_match_wins():
+    global_scope, function_scope, block = build_nested_tree()
+    assert scope_at(global_scope, 15) is block
+    assert scope_at(global_scope, 19) is function_scope
+
+
+def test_symbols_visible_at_includes_every_enclosing_scope_innermost_first():
+    global_scope, function_scope, block = build_nested_tree()
+    g = make_symbol("g", global_scope)
+    p = make_symbol("param", function_scope)
+    x = make_symbol("x", block)
+    global_scope.declare(g)
+    function_scope.declare(p)
+    block.declare(x)
+
+    visible = symbols_visible_at(global_scope, 15)
+
+    assert visible == [x, p, g]
+
+
+def test_symbols_visible_at_excludes_inner_scope_symbols_outside_its_span():
+    global_scope, function_scope, block = build_nested_tree()
+    p = make_symbol("param", function_scope)
+    x = make_symbol("x", block)
+    function_scope.declare(p)
+    block.declare(x)
+
+    visible = symbols_visible_at(global_scope, 19)  # in function, not in block
+
+    assert visible == [p]
+
+
+def test_symbols_visible_at_shadowed_name_appears_once_from_innermost():
+    global_scope, function_scope, block = build_nested_tree()
+    outer_x = make_symbol("x", global_scope)
+    inner_x = make_symbol("x", block)
+    global_scope.declare(outer_x)
+    block.declare(inner_x)
+
+    visible = symbols_visible_at(global_scope, 15)
+
+    assert visible == [inner_x]
+
+
+def test_symbols_visible_at_stops_at_struct_scope():
+    global_scope = Scope(kind=ScopeKind.GLOBAL, parent=None, span=make_span_range(0, 100))
+    global_scope.declare(make_symbol("g", global_scope))
+    struct_scope = Scope(kind=ScopeKind.STRUCT, parent=global_scope, span=make_span_range(10, 20))
+    field_symbol = Symbol(
+        name="x",
+        kind=SymbolKind.FIELD,
+        type=PrimitiveType("int"),
+        scope=struct_scope,
+        definition_loc=SPAN,
+    )
+    struct_scope.declare(field_symbol)
+    global_scope.children.append(struct_scope)
+
+    visible = symbols_visible_at(global_scope, 15)
+
+    assert visible == [field_symbol]

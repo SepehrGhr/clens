@@ -14,7 +14,7 @@ from clens.core.token import Span
 if TYPE_CHECKING:
     from clens.core.ast_nodes import Node
 
-__all__ = ["Scope", "ScopeKind"]
+__all__ = ["Scope", "ScopeKind", "scope_at", "symbols_visible_at"]
 
 
 class ScopeKind(Enum):
@@ -89,3 +89,42 @@ class Scope:
                 return None
             scope = scope.parent
         return None
+
+
+def scope_at(root: Scope, offset: int) -> Scope:
+    """The innermost scope under `root` whose span contains `offset` (D20).
+
+    Descends the tree rather than re-walking the AST — O(depth) — so it
+    works even on a partially broken file. Containment is half-open
+    (`start_offset <= offset < end_offset`), matching `Span` itself: the
+    character right after a scope's closing brace belongs to the enclosing
+    scope, not the one that just closed.
+
+    Takes the root `Scope` directly rather than a `SemanticModel`, so this
+    stays pure core: `SemanticModel` embeds the C-specific AST and cannot
+    live here (core must never import a language module).
+    """
+    for child in root.children:
+        if child.span.start_offset <= offset < child.span.end_offset:
+            return scope_at(child, offset)
+    return root
+
+
+def symbols_visible_at(root: Scope, offset: int) -> list[Symbol]:
+    """Every symbol visible at `offset`: the innermost scope's own symbols,
+    then each enclosing scope's, innermost first. A name already seen from
+    an inner scope shadows the outer one, so it is not repeated. Stops at a
+    struct scope rather than escalating past it, matching `Scope.lookup`.
+    """
+    visible: list[Symbol] = []
+    seen: set[str] = set()
+    scope: Scope | None = scope_at(root, offset)
+    while scope is not None:
+        for symbol in scope.symbols.values():
+            if symbol.name not in seen:
+                visible.append(symbol)
+                seen.add(symbol.name)
+        if scope.kind is ScopeKind.STRUCT:
+            break
+        scope = scope.parent
+    return visible

@@ -48,7 +48,12 @@ into every name in it.
       fields, `Reference`. → S1.1
 - [x] **P2.2** `Scope`: kind, parent, children, ordered symbol map, covered span.
       `declare()`, `lookup_local()`, `lookup()`. → S1.2
-- [ ] **P2.3** `scope_at(offset)` and `symbols_visible_at(offset)`. → S1.4, D20
+- [x] **P2.3** `scope_at(offset)` and `symbols_visible_at(offset)`. → S1.4, D20
+      Signature is `(root: Scope, offset)`, not `(model, offset)` as the skill's
+      illustrative snippet shows: `SemanticModel` embeds the C-specific AST and
+      cannot live in core, so these stay pure core functions over `Scope`
+      directly. `analyze()`'s caller (or Stage 5's `core/queries.py`) passes
+      `model.global_scope`.
 - [ ] **P2.4** `SemanticModel`: global scope, scope tree, flat symbol index,
       annotated AST. → D19
 - [ ] **P2.5** Tests for nesting, shadowing lookups, offset queries at scope
