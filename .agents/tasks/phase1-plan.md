@@ -141,5 +141,5 @@ must satisfy.
 
 ## Stage 7 — Gate
 
-- [ ] **T7.1** Walk `checklists/phase1-acceptance.md` top to bottom. Fix what
+- [x] **T7.1** Walk `checklists/phase1-acceptance.md` top to bottom. Fix what
       fails. Only then report Phase 1 complete.
