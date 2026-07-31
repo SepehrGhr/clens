@@ -206,15 +206,13 @@ into every name in it.
       `file` argument, so `_run()` special-cases it before `_load_source`
       ever runs. Manually verified via the real `clens serve` entry point +
       curl before writing the (mocked, non-blocking) test for it.
-- [ ] **P7.7** Screenshots into `docs/images/`, embedded in the README.
-      Blocked in this environment: capturing them needs a real browser
-      against a running `clens serve`, and headless-Chromium (via Playwright)
-      couldn't be fetched — pip reached PyPI fine but the Chromium CDN
-      download stalled indefinitely and was abandoned rather than left
-      spinning. Everything else about the web UI is done, tested, and
-      manually verified via curl. Left honestly unchecked rather than faked;
-      needs a human (or an environment with browser access) to run `clens
-      serve` and save the four views into `docs/images/`.
+- [x] **P7.7** Screenshots into `docs/images/`, embedded in the README.
+      Automated capture was blocked in this environment (headless-Chromium
+      couldn't be fetched — the Chromium CDN download stalled indefinitely
+      and was abandoned rather than left spinning). The user captured all
+      four manually and supplied them: overview (editor + highlighted pane +
+      symbol tree), completion popup, hover card, and diagnostics with a real
+      type error. Embedded in the README's new Web UI section.
 
 ## Stage 8 — Docs and gate (≈5 commits)
 

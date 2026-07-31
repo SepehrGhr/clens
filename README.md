@@ -107,6 +107,35 @@ AST, not just the token stream. See the rendered
 by CI on every push to `main`) or `tests/golden/expected/factorial.html`
 locally.
 
+## Web UI
+
+`clens serve` starts an interactive editor at `http://127.0.0.1:8000/` — a
+stdlib `http.server` backend (no Flask, no third-party dependency) driving a
+vanilla-JS front end: a plain `<textarea>` next to the AST-driven highlighted
+pane, re-analyzed on every keystroke (~300ms debounced).
+
+```bash
+clens serve --port 8000
+```
+
+Live diagnostics, with squiggles on the offending tokens and click-to-jump:
+
+![Diagnostics panel showing a real type error](docs/images/web-ui-diagnostics.png)
+
+Member completion, triggered by typing `.` / `->` (or Ctrl+Space anywhere):
+
+![Completion popup offering a struct's fields](docs/images/web-ui-completion.png)
+
+Hover a token in the highlighted pane for its signature, enclosing scope, and
+attached doc comment:
+
+![Hover card showing a function's signature and doc comment](docs/images/web-ui-hover.png)
+
+The full picture — editor, highlighted pane, and the live scope/symbol
+tree on the right:
+
+![c-lens web UI: editor, highlighted pane, and symbol tree](docs/images/web-ui-overview.png)
+
 ## Documentation
 
 | Doc | Contents |
