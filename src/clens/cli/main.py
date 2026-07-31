@@ -37,6 +37,7 @@ from clens.languages.c.queries import (
 from clens.languages.c.semantic import analyze
 from clens.render.ansi import render_ansi
 from clens.render.html import render_html
+from clens.web.server import serve
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -73,6 +74,10 @@ def build_parser() -> argparse.ArgumentParser:
     _add_common_arguments(hover_parser)
     _add_position_arguments(hover_parser)
 
+    serve_parser = subparsers.add_parser("serve", help="start the interactive web UI")
+    serve_parser.add_argument("--port", type=int, default=8000, help="port to listen on")
+    serve_parser.add_argument("--host", default="127.0.0.1", help="host to bind (default: local)")
+
     return parser
 
 
@@ -101,6 +106,9 @@ def main(argv: list[str] | None = None) -> int:
 
 
 def _run(args: argparse.Namespace) -> int:
+    if args.command == "serve":
+        return _cmd_serve(args)
+
     diagnostics = DiagnosticCollector()
     source = _load_source(args.file, diagnostics)
     if source is None:
@@ -340,6 +348,15 @@ def _position_result_to_jsonable(result: list[CompletionItem] | HoverInfo | None
         "scopeDescription": result.scope_description,
         "docComment": result.doc_comment,
     }
+
+
+def _cmd_serve(args: argparse.Namespace) -> int:
+    """`serve` has no `file` argument, so it bypasses `_COMMANDS` and
+    `_load_source` entirely (handled in `_run`) — it starts the web UI
+    (D22) and blocks until interrupted.
+    """
+    serve(host=args.host, port=args.port)
+    return 0
 
 
 _COMMANDS = {

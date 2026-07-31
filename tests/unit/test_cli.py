@@ -35,6 +35,31 @@ def test_build_parser_prog_name():
     assert build_parser().prog == "clens"
 
 
+# --- serve (S8.2, D22) -----------------------------------------------------
+
+
+def test_serve_command_parses_default_host_and_port():
+    args = build_parser().parse_args(["serve"])
+    assert args.host == "127.0.0.1"
+    assert args.port == 8000
+
+
+def test_serve_command_parses_custom_host_and_port():
+    args = build_parser().parse_args(["serve", "--port", "9000", "--host", "0.0.0.0"])
+    assert args.host == "0.0.0.0"
+    assert args.port == 9000
+
+
+def test_serve_command_calls_web_server_serve_with_parsed_args(monkeypatch):
+    """`serve` has no file argument and must bypass _load_source entirely -
+    this exercises that bypass without actually starting a real server."""
+    calls = []
+    monkeypatch.setattr("clens.cli.main.serve", lambda host, port: calls.append((host, port)))
+    code = main(["serve", "--port", "9001", "--host", "0.0.0.0"])
+    assert code == 0
+    assert calls == [("0.0.0.0", 9001)]
+
+
 # --- tokens -------------------------------------------------------------
 
 

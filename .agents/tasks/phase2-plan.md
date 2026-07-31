@@ -199,8 +199,13 @@ into every name in it.
       caret-position math. Manually verified end-to-end via `clens serve` +
       curl against every endpoint before moving on — the front end itself is
       not unit tested (skill's explicit call).
-- [ ] **P7.6** `clens serve [--port]` command; tests for every endpoint via the
+- [x] **P7.6** `clens serve [--port]` command; tests for every endpoint via the
       handler directly, no live socket.
+      Endpoint tests landed with P7.2 (`dispatch_post`/`handle_*` are exactly
+      "the handler," per the skill). This adds the CLI wiring: `serve` has no
+      `file` argument, so `_run()` special-cases it before `_load_source`
+      ever runs. Manually verified via the real `clens serve` entry point +
+      curl before writing the (mocked, non-blocking) test for it.
 - [ ] **P7.7** Screenshots into `docs/images/`, embedded in the README.
 
 ## Stage 8 — Docs and gate (≈5 commits)
