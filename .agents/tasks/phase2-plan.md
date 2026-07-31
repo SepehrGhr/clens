@@ -107,7 +107,7 @@ into every name in it.
       Binary/unary/index operand combinations the course document doesn't
       explicitly call out (e.g. `struct + int`, indexing a non-array) degrade
       to `unknown` silently rather than inventing new diagnostics.
-- [ ] **P4.6** **The four golden examples from S4.7**, as one test file, asserting
+- [x] **P4.6** **The four golden examples from S4.7**, as one test file, asserting
       exact severities: warning, error, error, error.
 - [ ] **P4.7** No-cascade test: a file with one undefined symbol used five times
       produces exactly one diagnostic. → S9.2
