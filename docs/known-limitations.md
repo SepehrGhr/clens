@@ -83,3 +83,71 @@ real C source can currently trigger it end-to-end through the highlighter. It
 exists for parity with R5.2's category list and so that adding boolean literals
 later (or a second language that has them, per D13) requires no changes to
 `core/highlight.py` or `core/theme.py`.
+
+## Phase 2 limitations
+
+### S4.8: flow-sensitive type inference — N/A
+
+The course document's S4.8 asks for flow-sensitive inference in target
+languages that are dynamically typed (Python, JavaScript). C is statically
+typed (D1) — every declaration states its type, so every `Type` this
+project computes comes from a declaration (`resolve_type_spec`) or is
+built structurally from already-typed subexpressions. There is no
+inference to perform; see `docs/type-system.md`'s closing section.
+
+### S5.2: `::` scope-resolution completion — N/A
+
+`::` is C++/Java syntax for qualifying a name by its enclosing
+class/namespace. This C subset has no such operator — it isn't in
+`languages/c/token_rules.py`'s operator set at all — so there is no
+"scope-resolution completion" context to detect; `languages/c/queries.py`'s
+context detector has three real contexts (member, general, argument-list)
+plus the comment/string suppression case, not four.
+
+### S6.3 rows 12 and 13 are block-local approximations
+
+Proper use-before-initialization needs Phase 3's control-flow graph and
+definite-assignment analysis; proper unused-variable analysis needs
+liveness. Both are out of scope for Phase 2 (`project/04-future-phases.md`),
+so `languages/c/usage.py` does the cheap version instead:
+
+- **Row 12** (`S008`, warning): a read of a scalar-primitive local with no
+  *prior* write in `Symbol.references`' recorded order — order that
+  matches source order for straight-line code, but is built by a single
+  top-to-bottom walk with no notion of which branch of an `if` actually
+  executes. This is precisely what it misses, using the course document's
+  own example: `if (c) { x = 42; } printf(x);` — the write inside the `if`
+  is recorded *before* the read regardless of whether `c` is ever true at
+  runtime, so this crude version does not warn on that read even though a
+  real definite-assignment analysis would (`c == 0` reaches `printf(x)`
+  with `x` genuinely uninitialized). Scoped to scalar primitives only:
+  pointers, arrays, and structs are routinely "initialized" without a
+  plain identifier write (`p = &n;` doesn't write `p`; `p.x = 1;` doesn't
+  write the whole struct `p`), so checking them produced diagnostics the
+  crude approximation was never meant to produce — confirmed against
+  `member_errors.c`, which declares `struct Point p;` / `struct Point *q;`
+  with no initializer specifically to exercise member-access errors, not
+  this row.
+- **Row 13** (`S009`, info): a symbol whose `references` contains no reads
+  at all (`not Symbol.is_used`). Parameters and globals are excluded —
+  unused parameters are ordinary in C, and neither row is meaningful
+  outside a function body.
+
+### The S5.6 fixture uses a plain declaration, not an initializer list
+
+The course document's own completion example writes
+`struct Point p = {1, 2};`. Compound literals and initializer lists are out
+of this subset (`project/03-c-subset.md`), so
+`tests/fixtures/valid/member_completion.c` and the golden expectation in
+`tests/fixtures/golden/completion_member.txt` use `struct Point p;` instead
+— the same completion behavior (`p.` offers exactly `x : int` and
+`y : int`), reached through a declaration form that's actually in scope.
+The subset was not widened for this one fixture.
+
+### `sizeof` yields `int`, not `size_t`
+
+Real C's `sizeof` operator has type `size_t`, an unsigned integer type this
+subset has no representation for (`core/types.py`'s `Type` hierarchy has no
+unsigned variant at all — D16). `SizeofExpr` always types as `int`
+(`docs/type-system.md`'s per-node table) rather than modeling a type that
+exists nowhere else in the system for the sake of one operator.

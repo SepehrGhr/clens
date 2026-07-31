@@ -220,7 +220,7 @@ into every name in it.
       symbol table structure. → deliverable
 - [x] **P8.2** `docs/type-system.md` — the type lattice, conversion table, checking
       rules, and the attribute-grammar framing the course document asks for.
-- [ ] **P8.3** `docs/known-limitations.md` — append Phase 2 entries (S4.8 N/A,
+- [x] **P8.3** `docs/known-limitations.md` — append Phase 2 entries (S4.8 N/A,
       S5.2 `::` N/A, S6.3 crude rows, the S5.6 fixture deviation).
 - [ ] **P8.4** README: new commands, web UI screenshots, updated pipeline diagram.
       `docs/testing.md` updated with the new commands.
