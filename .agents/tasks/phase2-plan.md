@@ -173,7 +173,7 @@ into every name in it.
 
 → `skills/web-ui`.
 
-- [ ] **P7.1** `web/renderer.py` — an interactive HTML renderer emitting
+- [x] **P7.1** `web/renderer.py` — an interactive HTML renderer emitting
       `data-*` attributes per token span. **Separate from `render/html.py`**, which
       stays frozen and JS-free. → S8.3
 - [ ] **P7.2** `web/server.py` — stdlib `http.server`, JSON endpoints
