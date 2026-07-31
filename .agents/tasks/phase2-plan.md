@@ -132,7 +132,7 @@ into every name in it.
       `struct Point p;`, not the initializer-list form — see the note in S5.6).
 - [x] **P5.4** General scope completion + parameter-type-guided completion inside an
       argument list. → S5.2
-- [ ] **P5.5** Ranking: prefix, then fuzzy, with scope-distance tie-breaks; emit
+- [x] **P5.5** Ranking: prefix, then fuzzy, with scope-distance tie-breaks; emit
       `label` / `kind` / `detail` / `sortOrder`. → S5.4, S5.5, D24
 - [ ] **P5.6** Hover: signature, enclosing scope, and attached doc comment from the
       retained comment tokens. → S7
