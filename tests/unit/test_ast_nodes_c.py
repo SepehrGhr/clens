@@ -26,6 +26,7 @@ def test_func_decl_prototype_has_no_body():
         span=SPAN,
         return_type=c_ast.TypeSpec(span=SPAN, base="int"),
         name="factorial",
+        name_span=SPAN,
         params=[],
     )
     assert proto.body is None
@@ -37,7 +38,12 @@ def test_func_decl_definition_has_a_block_body():
         span=SPAN,
         return_type=c_ast.TypeSpec(span=SPAN, base="int"),
         name="factorial",
-        params=[c_ast.Param(span=SPAN, type=c_ast.TypeSpec(span=SPAN, base="int"), name="n")],
+        name_span=SPAN,
+        params=[
+            c_ast.Param(
+                span=SPAN, type=c_ast.TypeSpec(span=SPAN, base="int"), name="n", name_span=SPAN
+            )
+        ],
         body=body,
     )
     assert func.body is body
@@ -48,9 +54,21 @@ def test_multiple_declarators_are_sibling_var_decls_not_wrapped():
     """'int a = 1, b, c = 3;' -> three sibling VarDecl nodes, no wrapper node
     (D9-style flattening, matching pycparser's own Decl handling)."""
     int_type = c_ast.TypeSpec(span=SPAN, base="int")
-    a = c_ast.VarDecl(span=SPAN, type=int_type, name="a", init=c_ast.IntLiteral(span=SPAN, value=1))
-    b = c_ast.VarDecl(span=SPAN, type=int_type, name="b")
-    c = c_ast.VarDecl(span=SPAN, type=int_type, name="c", init=c_ast.IntLiteral(span=SPAN, value=3))
+    a = c_ast.VarDecl(
+        span=SPAN,
+        type=int_type,
+        name="a",
+        name_span=SPAN,
+        init=c_ast.IntLiteral(span=SPAN, value=1),
+    )
+    b = c_ast.VarDecl(span=SPAN, type=int_type, name="b", name_span=SPAN)
+    c = c_ast.VarDecl(
+        span=SPAN,
+        type=int_type,
+        name="c",
+        name_span=SPAN,
+        init=c_ast.IntLiteral(span=SPAN, value=3),
+    )
     block = c_ast.Block(span=SPAN, body=[a, b, c])
     assert [d.name for d in block.body] == ["a", "b", "c"]
     assert b.init is None
@@ -86,9 +104,14 @@ def test_struct_decl_holds_field_list():
     point = c_ast.StructDecl(
         span=SPAN,
         name="Point",
+        name_span=SPAN,
         fields=[
-            c_ast.Field(span=SPAN, type=c_ast.TypeSpec(span=SPAN, base="int"), name="x"),
-            c_ast.Field(span=SPAN, type=c_ast.TypeSpec(span=SPAN, base="int"), name="y"),
+            c_ast.Field(
+                span=SPAN, type=c_ast.TypeSpec(span=SPAN, base="int"), name="x", name_span=SPAN
+            ),
+            c_ast.Field(
+                span=SPAN, type=c_ast.TypeSpec(span=SPAN, base="int"), name="y", name_span=SPAN
+            ),
         ],
     )
     assert [f.name for f in point.fields] == ["x", "y"]

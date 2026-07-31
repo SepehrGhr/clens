@@ -22,6 +22,7 @@ from dataclasses import dataclass, field
 from typing import ClassVar
 
 from clens.core.ast_nodes import Decl, Expr, Node, Stmt
+from clens.core.token import Span
 
 __all__ = [
     "AssignExpr",
@@ -87,6 +88,9 @@ class Field(Node):
 
     type: TypeSpec
     name: str
+    #: Span of just the `name` token, distinct from `span` (the whole
+    #: field declaration) — the highlighter needs to color the name alone.
+    name_span: Span
 
     INLINE_FIELDS: ClassVar[tuple[str, ...]] = ("name",)
 
@@ -107,6 +111,8 @@ class FuncDecl(Decl):
 
     return_type: TypeSpec
     name: str
+    #: Span of just the `name` token — see `Field.name_span`.
+    name_span: Span
     params: list[Param] = field(default_factory=list)
     body: Block | None = None
 
@@ -119,6 +125,7 @@ class Param(Decl):
 
     type: TypeSpec
     name: str
+    name_span: Span
     array: bool = False
     array_size: Expr | None = None
 
@@ -133,6 +140,7 @@ class VarDecl(Decl):
 
     type: TypeSpec
     name: str
+    name_span: Span
     array: bool = False
     array_size: Expr | None = None
     init: Expr | None = None
@@ -145,6 +153,7 @@ class StructDecl(Decl):
     """A `struct` type declaration with its field list."""
 
     name: str
+    name_span: Span
     fields: list[Field] = field(default_factory=list)
 
     INLINE_FIELDS: ClassVar[tuple[str, ...]] = ("name",)

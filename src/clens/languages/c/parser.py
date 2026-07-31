@@ -450,6 +450,7 @@ class Parser(ParserBase):
             span=join(type_spec.span, end_token.span),
             type=type_spec,
             name=name_token.lexeme,
+            name_span=name_token.span,
             array=array,
             array_size=array_size,
         )
@@ -476,6 +477,7 @@ class Parser(ParserBase):
             span=join(base_type.span, last_span),
             type=base_type,
             name=name_token.lexeme,
+            name_span=name_token.span,
             array=array,
             array_size=array_size,
             init=init,
@@ -516,6 +518,7 @@ class Parser(ParserBase):
             span=join(return_type.span, end_span),
             return_type=return_type,
             name=name_token.lexeme,
+            name_span=name_token.span,
             params=params,
             body=body,
         )
@@ -525,7 +528,10 @@ class Parser(ParserBase):
         name_token = self.expect_type(TokenType.IDENT, "field name")
         semi = self.expect(TokenType.DELIMITER, ";", "after struct field")
         return ast.Field(
-            span=join(type_spec.span, semi.span), type=type_spec, name=name_token.lexeme
+            span=join(type_spec.span, semi.span),
+            type=type_spec,
+            name=name_token.lexeme,
+            name_span=name_token.span,
         )
 
     def parse_struct_decl(self) -> ast.StructDecl:
@@ -543,7 +549,10 @@ class Parser(ParserBase):
         self.expect(TokenType.DELIMITER, "}", "to close struct body")
         semi = self.expect(TokenType.DELIMITER, ";", "after struct declaration")
         return ast.StructDecl(
-            span=join(struct_token.span, semi.span), name=name_token.lexeme, fields=fields
+            span=join(struct_token.span, semi.span),
+            name=name_token.lexeme,
+            name_span=name_token.span,
+            fields=fields,
         )
 
     def parse_external_decl(self) -> list[ast.Decl]:
