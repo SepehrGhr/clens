@@ -1,6 +1,7 @@
 """clens command-line entry point (R7.1): `tokens`, `ast`, `highlight`,
-`check`, `symbols`, each with `--json` and `-o/--output`; `highlight`
-additionally takes `--format ansi|html`.
+`check`, `symbols`, `complete`, `hover`, each with `--json` and
+`-o/--output`; `highlight` additionally takes `--format ansi|html`;
+`complete`/`hover` additionally take a 1-based `line` and `col`.
 
 Exit codes: `0` clean, `1` diagnostics with ERROR severity present,
 `2` internal failure. Rule 1 (never crash) means `2` should be unreachable
@@ -27,6 +28,7 @@ from clens.core.token import Span, Token, iter_significant
 from clens.languages.c.highlighter import highlight as highlight_program
 from clens.languages.c.lexer import tokenize
 from clens.languages.c.parser import Parser
+from clens.languages.c.queries import CompletionItem, HoverInfo, completions_at, hover_at
 from clens.languages.c.semantic import analyze
 from clens.render.ansi import render_ansi
 from clens.render.html import render_html
@@ -58,6 +60,14 @@ def build_parser() -> argparse.ArgumentParser:
     symbols_parser = subparsers.add_parser("symbols", help="dump the symbol table")
     _add_common_arguments(symbols_parser)
 
+    complete_parser = subparsers.add_parser("complete", help="completion list at a cursor")
+    _add_common_arguments(complete_parser)
+    _add_position_arguments(complete_parser)
+
+    hover_parser = subparsers.add_parser("hover", help="hover info at a cursor")
+    _add_common_arguments(hover_parser)
+    _add_position_arguments(hover_parser)
+
     return parser
 
 
@@ -67,6 +77,11 @@ def _add_common_arguments(subparser: argparse.ArgumentParser) -> None:
     subparser.add_argument(
         "-o", "--output", metavar="OUT", help="write output to this file instead of stdout"
     )
+
+
+def _add_position_arguments(subparser: argparse.ArgumentParser) -> None:
+    subparser.add_argument("line", type=int, help="1-based line number")
+    subparser.add_argument("col", type=int, help="1-based column number")
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -265,12 +280,91 @@ def _render_scope(scope: Scope, depth: int) -> list[str]:
     return lines
 
 
+def _cmd_complete(source: SourceFile, args: argparse.Namespace) -> tuple[str, DiagnosticCollector]:
+    diagnostics = DiagnosticCollector()
+    offset = _offset_for(source, args, diagnostics)
+    if offset is None:
+        return _position_error_output(diagnostics, args), diagnostics
+    tokens, program = _tokenize_and_parse(source, diagnostics)
+    model = analyze(program, source, diagnostics, tokens=tokens)
+    items = completions_at(model, offset)
+    return _position_output(items, args), diagnostics
+
+
+def _cmd_hover(source: SourceFile, args: argparse.Namespace) -> tuple[str, DiagnosticCollector]:
+    diagnostics = DiagnosticCollector()
+    offset = _offset_for(source, args, diagnostics)
+    if offset is None:
+        return _position_error_output(diagnostics, args), diagnostics
+    tokens, program = _tokenize_and_parse(source, diagnostics)
+    model = analyze(program, source, diagnostics, tokens=tokens)
+    info = hover_at(model, offset)
+    return _position_output(info, args), diagnostics
+
+
+def _offset_for(
+    source: SourceFile, args: argparse.Namespace, diagnostics: DiagnosticCollector
+) -> int | None:
+    """`args.line`/`args.col` to a 0-based offset, or `None` (with an
+    ERROR diagnostic added) if the position is out of range for `source`.
+    A typo'd line/column is a plausible, ordinary mistake — it gets a
+    normal diagnostic and exit code 1, not the top-level internal-error
+    fallback.
+    """
+    try:
+        return source.line_col_to_offset(args.line, args.col)
+    except ValueError as exc:
+        diagnostics.add(_file_error(args.file, str(exc)))
+        return None
+
+
+def _position_error_output(diagnostics: DiagnosticCollector, args: argparse.Namespace) -> str:
+    message = diagnostics.diagnostics[0].message
+    if args.json:
+        return json.dumps({"error": message}, indent=2)
+    return f"clens: {message}"
+
+
+def _position_output(
+    result: list[CompletionItem] | HoverInfo | None, args: argparse.Namespace
+) -> str:
+    if args.json:
+        return json.dumps(_position_result_to_jsonable(result), indent=2)
+    if result is None:
+        return "no hover information"
+    if isinstance(result, list):
+        if not result:
+            return "no completions"
+        return "\n".join(f"{i.label}  {i.kind}  {i.detail}" for i in result)
+    lines = [result.signature, result.scope_description]
+    if result.doc_comment:
+        lines.append(result.doc_comment)
+    return "\n".join(lines)
+
+
+def _position_result_to_jsonable(result: list[CompletionItem] | HoverInfo | None) -> object:
+    if result is None:
+        return None
+    if isinstance(result, list):
+        return [
+            {"label": i.label, "kind": i.kind, "detail": i.detail, "sortOrder": i.sort_order}
+            for i in result
+        ]
+    return {
+        "signature": result.signature,
+        "scopeDescription": result.scope_description,
+        "docComment": result.doc_comment,
+    }
+
+
 _COMMANDS = {
     "tokens": _cmd_tokens,
     "ast": _cmd_ast,
     "highlight": _cmd_highlight,
     "check": _cmd_check,
     "symbols": _cmd_symbols,
+    "complete": _cmd_complete,
+    "hover": _cmd_hover,
 }
 
 

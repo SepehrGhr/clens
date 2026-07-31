@@ -163,7 +163,11 @@ into every name in it.
       Sorting/dedup was already `DiagnosticCollector.sorted()`'s job (used by both
       `to_json()` and `format_pretty()`); the actual gap was `_cmd_check` never
       calling `analyze()` at all.
-- [ ] **P6.4** `clens complete` and `clens hover` CLI commands + `--json`. → S8.1
+- [x] **P6.4** `clens complete` and `clens hover` CLI commands + `--json`. → S8.1
+      Take 1-based `line`/`col` (S8.1's own spelling), converted to an offset via
+      `SourceFile.line_col_to_offset` — the one conversion point D23 calls for.
+      An out-of-range position is a plausible typo, not an internal error: it
+      gets a normal diagnostic and exit code 1, same as any other bad input.
 
 ## Stage 7 — Web UI (≈7 commits)
 

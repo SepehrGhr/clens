@@ -187,6 +187,90 @@ def test_symbols_command_reports_semantic_errors(tmp_path, capsys):
     assert code == 1
 
 
+# --- complete (S8.1) -----------------------------------------------------
+
+
+def test_complete_command_lists_matching_symbols(tmp_path, capsys):
+    """`fac` with no trailing ';' is a syntax error - the normal state
+    while a user is mid-typing (the skill's own framing) - so the exit
+    code reflects that real parse error; completion must still work."""
+    text = "int factorial(int n) { return n; }\nvoid f(void) {\n    fac\n}\n"
+    path = write(tmp_path, "a.c", text)
+    main(["complete", path, "3", "8"])
+    out = capsys.readouterr().out
+    assert "factorial" in out
+    assert "function" in out
+
+
+def test_complete_command_json(tmp_path, capsys):
+    text = "int factorial(int n) { return n; }\nvoid f(void) {\n    fac\n}\n"
+    path = write(tmp_path, "a.c", text)
+    main(["complete", path, "3", "8", "--json"])
+    payload = json.loads(capsys.readouterr().out)
+    assert payload[0]["label"] == "factorial"
+    assert payload[0]["kind"] == "function"
+    assert payload[0]["detail"] == "(int) -> int"
+    assert "sortOrder" in payload[0]
+
+
+def test_complete_command_no_matches(tmp_path, capsys):
+    path = write(tmp_path, "a.c", "void f(void) {\n    zzz\n}\n")
+    main(["complete", path, "2", "8"])
+    out = capsys.readouterr().out
+    assert out.strip() == "no completions"
+
+
+def test_complete_command_out_of_range_position_exits_1(tmp_path, capsys):
+    path = write(tmp_path, "a.c", "int g;\n")
+    code = main(["complete", path, "999", "1"])
+    out = capsys.readouterr().out
+    assert code == 1
+    assert "clens:" in out
+
+
+# --- hover (S7, S8.1) -----------------------------------------------------
+
+
+def test_hover_command_shows_signature_and_scope(tmp_path, capsys):
+    text = "/* Computes n factorial. */\nint factorial(int n) { return n; }\n"
+    path = write(tmp_path, "a.c", text)
+    code = main(["hover", path, "2", "6"])
+    out = capsys.readouterr().out
+    assert code == 0
+    assert "(int) -> int" in out
+    assert "global scope" in out
+    assert "Computes n factorial." in out
+
+
+def test_hover_command_json(tmp_path, capsys):
+    text = "int g = 1;\n"
+    path = write(tmp_path, "a.c", text)
+    code = main(["hover", path, "1", "5"])
+    capsys.readouterr()
+    code_json = main(["hover", path, "1", "5", "--json"])
+    payload = json.loads(capsys.readouterr().out)
+    assert code == code_json == 0
+    assert payload["signature"] == "int"
+    assert payload["scopeDescription"] == "global scope"
+    assert payload["docComment"] is None
+
+
+def test_hover_command_no_symbol_at_position(tmp_path, capsys):
+    path = write(tmp_path, "a.c", "int g;\n\n")
+    code = main(["hover", path, "2", "1"])
+    out = capsys.readouterr().out
+    assert code == 0
+    assert out.strip() == "no hover information"
+
+
+def test_hover_command_out_of_range_position_exits_1(tmp_path, capsys):
+    path = write(tmp_path, "a.c", "int g;\n")
+    code = main(["hover", path, "1", "999"])
+    out = capsys.readouterr().out
+    assert code == 1
+    assert "clens:" in out
+
+
 # --- exit codes (R7.1) -------------------------------------------------------
 
 
