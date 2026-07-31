@@ -80,7 +80,7 @@ into every name in it.
       resolution are the same tree walk, not separable steps.
 - [x] **P3.4** Diagnostics: undefined symbol (S6.1 row 5), duplicate declaration
       (row 8), shadowing warning (row 11). → S3.1, S3.2
-- [ ] **P3.5** Prototype-then-definition must not fire duplicate-declaration;
+- [x] **P3.5** Prototype-then-definition must not fire duplicate-declaration;
       mismatched signatures between them must. Test both.
 - [ ] **P3.6** Tests: forward reference, mutual recursion, shadowing at three
       depths, redeclaration in the same scope vs an inner one, `ErrorStmt` regions
