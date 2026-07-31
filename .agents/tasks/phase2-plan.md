@@ -207,6 +207,14 @@ into every name in it.
       ever runs. Manually verified via the real `clens serve` entry point +
       curl before writing the (mocked, non-blocking) test for it.
 - [ ] **P7.7** Screenshots into `docs/images/`, embedded in the README.
+      Blocked in this environment: capturing them needs a real browser
+      against a running `clens serve`, and headless-Chromium (via Playwright)
+      couldn't be fetched — pip reached PyPI fine but the Chromium CDN
+      download stalled indefinitely and was abandoned rather than left
+      spinning. Everything else about the web UI is done, tested, and
+      manually verified via curl. Left honestly unchecked rather than faked;
+      needs a human (or an environment with browser access) to run `clens
+      serve` and save the four views into `docs/images/`.
 
 ## Stage 8 — Docs and gate (≈5 commits)
 
