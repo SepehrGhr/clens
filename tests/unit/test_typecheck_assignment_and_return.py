@@ -48,19 +48,19 @@ def test_var_decl_widening_is_clean():
 
 
 def test_assign_expr_narrowing_is_a_warning():
-    _, diagnostics = analyze_text("void f(void) { int x; x = 3.14; }\n")
+    _, diagnostics = analyze_text("void f(void) { int x; x = 3.14; x; }\n")
     assert len(diagnostics.diagnostics) == 1
     assert diagnostics.diagnostics[0].code == SemanticCode.NARROWING_CONVERSION
 
 
 def test_assign_expr_incompatible_is_an_error():
-    _, diagnostics = analyze_text("void f(void) { char *s; s = 42; }\n")
+    _, diagnostics = analyze_text("void f(void) { char *s; s = 42; s; }\n")
     assert len(diagnostics.diagnostics) == 1
     assert diagnostics.diagnostics[0].code == SemanticCode.ASSIGNMENT_TYPE_MISMATCH
 
 
 def test_int_to_pointer_incompatible_symmetric_direction_too():
-    _, diagnostics = analyze_text("void f(void) { int *p; int n; n = p; }\n")
+    _, diagnostics = analyze_text("void f(void) { int *p; int n; n = p; n; }\n")
     assert len(diagnostics.diagnostics) == 1
     assert diagnostics.diagnostics[0].code == SemanticCode.ASSIGNMENT_TYPE_MISMATCH
 

@@ -173,7 +173,7 @@ def test_logical_operators_yield_int():
 
 
 def test_pointer_plus_int_is_the_same_pointer_type():
-    model, diagnostics = analyze_text("void f(void) { int *p; int n; p + n; }\n")
+    model, diagnostics = analyze_text("void f(void) { int *p; int n = 0; p + n; }\n")
     add = find(find(model.program, ast.FuncDecl).body, ast.BinaryExpr, op="+")
     assert add.type_annotation == PointerType(PrimitiveType("int"))
     assert not diagnostics.diagnostics
@@ -218,7 +218,8 @@ def test_increment_keeps_operand_type():
 
 
 def test_ternary_matching_branch_types():
-    model, diagnostics = analyze_text("void f(void) { int c; int a; int b; c ? a : b; }\n")
+    text = "void f(void) { int c = 1; int a = 0; int b = 0; c ? a : b; }\n"
+    model, diagnostics = analyze_text(text)
     node = find(model.program, ast.TernaryExpr)
     assert node.type_annotation == PrimitiveType("int")
     assert not diagnostics.diagnostics
@@ -232,7 +233,7 @@ def test_ternary_numeric_promotion():
 
 def test_ternary_mismatch_is_an_error():
     model, diagnostics = analyze_text(
-        "struct P { int x; };\nvoid f(void) { int c; struct P p; int a; c ? p : a; }\n"
+        "struct P { int x; };\nvoid f(void) { int c = 1; struct P p; int a = 0; c ? p : a; }\n"
     )
     node = find(model.program, ast.TernaryExpr)
     assert str(node.type_annotation) == "unknown"
@@ -259,7 +260,7 @@ def test_index_on_pointer_yields_pointee_type():
 
 
 def test_sizeof_is_always_int():
-    model, diagnostics = analyze_text("void f(void) { sizeof(int); int x; sizeof x; }\n")
+    model, diagnostics = analyze_text("void f(void) { sizeof(int); int x = 0; sizeof x; }\n")
     for node in walk(model.program):
         if isinstance(node, ast.SizeofExpr):
             assert node.type_annotation == PrimitiveType("int")

@@ -141,8 +141,15 @@ into every name in it.
 
 → `skills/diagnostics`.
 
-- [ ] **P6.1** Crude use-before-initialization (row 12) and unused variable
+- [x] **P6.1** Crude use-before-initialization (row 12) and unused variable
       (row 13), from `is_initialized` / `is_used`. → S6.3
+      Scoped to scalar-primitive locals only: pointers/arrays/structs are
+      routinely "initialized" without a simple identifier write (`p = &n;`
+      doesn't write `p` the array does, `p.x = 1;` doesn't write the whole
+      struct), so checking them produced noise beyond what the crude
+      approximation was meant to catch — confirmed against member_errors.c,
+      which declares `struct Point p;`/`struct Point *q;` with no
+      initializer specifically to test member access, not row 12.
 - [ ] **P6.2** Audit all thirteen rows against the table; one test per row asserting
       severity and code. → S6.1
 - [ ] **P6.3** `clens check` now runs lexer + parser + semantic in one pass, sorted,

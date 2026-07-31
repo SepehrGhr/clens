@@ -17,6 +17,7 @@ from clens.core.scopes import Scope
 from clens.core.symbols import Symbol
 from clens.languages.c.resolver import resolve
 from clens.languages.c.typecheck import type_check
+from clens.languages.c.usage import check_usage
 
 if TYPE_CHECKING:
     from clens.core.diagnostics import DiagnosticCollector
@@ -54,10 +55,10 @@ def analyze(
     diagnostics: DiagnosticCollector,
     tokens: list[Token] | None = None,
 ) -> SemanticModel:
-    """Run name resolution (S2) then type checking (S4) over `program` and
-    return the resulting `SemanticModel`. Mirrors `lexer.tokenize()` /
-    `parser.parse()`: takes a `DiagnosticCollector` to add to, never raises,
-    never returns `None`.
+    """Run name resolution (S2), type checking (S4), and the crude usage
+    checks (S6.3) over `program`, returning the resulting `SemanticModel`.
+    Mirrors `lexer.tokenize()` / `parser.parse()`: takes a
+    `DiagnosticCollector` to add to, never raises, never returns `None`.
 
     `tokens` is optional and defaults to empty: most callers (`clens check`,
     plain semantic analysis) never need it, but a caller building a model
@@ -76,4 +77,5 @@ def analyze(
         tokens=tokens or [],
     )
     type_check(model, source, diagnostics)
+    check_usage(model, diagnostics)
     return model

@@ -41,7 +41,7 @@ def test_undefined_name_used_in_five_typed_contexts_is_still_one_diagnostic():
         "    if (counter < 0) { }\n"
         "    use2(counter);\n"
         "    counter = 5;\n"
-        "    return counter;\n"
+        "    return counter + local;\n"
         "}\n"
         "int use2(int n) { return n; }\n"
     )
@@ -56,7 +56,7 @@ def test_undefined_call_used_as_operand_five_times_is_one_diagnostic():
         "int use(void) {\n"
         "    int a = missing() + missing();\n"
         "    int b = missing() * missing();\n"
-        "    return missing();\n"
+        "    return missing() + a + b;\n"
         "}\n"
     )
     _, diagnostics = analyze_text(text)
