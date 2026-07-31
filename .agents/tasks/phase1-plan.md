@@ -134,9 +134,9 @@ must satisfy.
       to GitHub Pages. → R9.4
 - [x] **T6.4** `docs/architecture.md`, `docs/known-limitations.md`. → D4, D5
 - [x] **T6.5** `docs/testing.md`, `docs/team.md`. → D6, D7
-- [ ] **T6.6** `README.md`: summary, pipeline diagram, install, quickstart, usage
+- [x] **T6.6** `README.md`: summary, pipeline diagram, install, quickstart, usage
       with real output, badge, doc links. → D8
-- [ ] **T6.7** Coverage pass to ≥80%; fill the gaps with real tests, never with
+- [x] **T6.7** Coverage pass to ≥80%; fill the gaps with real tests, never with
       `# pragma: no cover` on untested logic. → R9.4
 
 ## Stage 7 — Gate
