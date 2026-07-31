@@ -69,7 +69,7 @@ into every name in it.
 
 → `skills/name-resolution`.
 
-- [ ] **P3.1** Pass 1 — declaration scan: functions, prototypes, structs, globals
+- [x] **P3.1** Pass 1 — declaration scan: functions, prototypes, structs, globals
       into the global scope. → S2.1
 - [ ] **P3.2** Pass 2 — scope construction while walking bodies: function scope
       holds params, `Block` opens a scope, `ForStmt` opens a scope for its init
