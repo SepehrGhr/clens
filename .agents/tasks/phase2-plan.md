@@ -130,7 +130,7 @@ into every name in it.
       is a syntax error, and that's the normal mid-typing state.
 - [x] **P5.3** Member completion, including the S5.6 golden example (with
       `struct Point p;`, not the initializer-list form — see the note in S5.6).
-- [ ] **P5.4** General scope completion + parameter-type-guided completion inside an
+- [x] **P5.4** General scope completion + parameter-type-guided completion inside an
       argument list. → S5.2
 - [ ] **P5.5** Ranking: prefix, then fuzzy, with scope-distance tie-breaks; emit
       `label` / `kind` / `detail` / `sortOrder`. → S5.4, S5.5, D24
