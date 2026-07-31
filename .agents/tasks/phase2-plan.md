@@ -60,10 +60,9 @@ into every name in it.
       (C-specific), same layering reason as `resolve_type_spec`.
 - [x] **P2.5** Tests for nesting, shadowing lookups, offset queries at scope
       boundaries (first char, last char, one past the end).
-- [ ] **P2.6** `clens symbols <file>` CLI command + `--json`. → S8.1
-      Deferred to Stage 3: needs `analyze()` (P3.1-P3.2) to produce a real
-      `SemanticModel` to serve. Decided with the user rather than stubbing a
-      throwaway single-pass walk just to exercise the CLI early.
+- [x] **P2.6** `clens symbols <file>` CLI command + `--json`. → S8.1
+      Landed here, after Stage 3's `analyze()`, per the deferral decided with
+      the user back in Stage 2.
 
 ## Stage 3 — Name resolution (≈6 commits)
 

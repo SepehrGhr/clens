@@ -136,6 +136,38 @@ def test_check_command_json(tmp_path, capsys):
     assert payload[0]["severity"] == "error"
 
 
+# --- symbols (S8.1) -----------------------------------------------------------
+
+
+def test_symbols_command_renders_the_scope_tree(tmp_path, capsys):
+    path = write(tmp_path, "a.c", "int g = 1;\nint f(int x) { return x + g; }\n")
+    code = main(["symbols", path])
+    out = capsys.readouterr().out
+    assert code == 0
+    assert "GLOBAL" in out
+    assert "g: variable int" in out
+    assert "f: function" in out
+    assert "x: parameter int" in out
+
+
+def test_symbols_command_json(tmp_path, capsys):
+    path = write(tmp_path, "a.c", "int g = 1;\n")
+    code = main(["symbols", path, "--json"])
+    payload = json.loads(capsys.readouterr().out)
+    assert code == 0
+    assert payload["kind"] == "global"
+    names = {s["name"] for s in payload["symbols"]}
+    assert names == {"g"}
+    assert payload["symbols"][0]["type"] == "int"
+
+
+def test_symbols_command_reports_semantic_errors(tmp_path, capsys):
+    path = write(tmp_path, "a.c", "int f(void) { return undeclared; }\n")
+    code = main(["symbols", path, "--json"])
+    capsys.readouterr()
+    assert code == 1
+
+
 # --- exit codes (R7.1) -------------------------------------------------------
 
 

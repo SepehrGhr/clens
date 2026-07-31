@@ -1,6 +1,6 @@
 """clens command-line entry point (R7.1): `tokens`, `ast`, `highlight`,
-`check`, each with `--json` and `-o/--output`; `highlight` additionally
-takes `--format ansi|html`.
+`check`, `symbols`, each with `--json` and `-o/--output`; `highlight`
+additionally takes `--format ansi|html`.
 
 Exit codes: `0` clean, `1` diagnostics with ERROR severity present,
 `2` internal failure. Rule 1 (never crash) means `2` should be unreachable
@@ -20,11 +20,14 @@ from pathlib import Path
 from clens.core.ast_nodes import Node
 from clens.core.ast_printer import format_ast
 from clens.core.diagnostics import Diagnostic, DiagnosticCollector, Position, Severity
+from clens.core.scopes import Scope
 from clens.core.source import SourceFile
+from clens.core.symbols import Symbol
 from clens.core.token import Span, Token, iter_significant
 from clens.languages.c.highlighter import highlight as highlight_program
 from clens.languages.c.lexer import tokenize
 from clens.languages.c.parser import Parser
+from clens.languages.c.semantic import analyze
 from clens.render.ansi import render_ansi
 from clens.render.html import render_html
 
@@ -51,6 +54,9 @@ def build_parser() -> argparse.ArgumentParser:
 
     check_parser = subparsers.add_parser("check", help="report diagnostics only")
     _add_common_arguments(check_parser)
+
+    symbols_parser = subparsers.add_parser("symbols", help="dump the symbol table")
+    _add_common_arguments(symbols_parser)
 
     return parser
 
@@ -219,11 +225,51 @@ def _cmd_check(source: SourceFile, args: argparse.Namespace) -> tuple[str, Diagn
     return diagnostics.format_pretty(source), diagnostics
 
 
+def _cmd_symbols(source: SourceFile, args: argparse.Namespace) -> tuple[str, DiagnosticCollector]:
+    diagnostics = DiagnosticCollector()
+    _, program = _tokenize_and_parse(source, diagnostics)
+    model = analyze(program, source, diagnostics)
+    if args.json:
+        return json.dumps(_scope_to_dict(model.global_scope), indent=2), diagnostics
+    return "\n".join(_render_scope(model.global_scope, 0)), diagnostics
+
+
+def _scope_to_dict(scope: Scope) -> dict:
+    return {
+        "kind": scope.kind.value,
+        "symbols": [_symbol_to_dict(s) for s in scope.symbols.values()],
+        "children": [_scope_to_dict(c) for c in scope.children],
+    }
+
+
+def _symbol_to_dict(symbol: Symbol) -> dict:
+    return {
+        "name": symbol.name,
+        "kind": symbol.kind.value,
+        "type": str(symbol.type),
+        "line": symbol.definition_loc.line,
+        "column": symbol.definition_loc.column,
+        "is_used": symbol.is_used,
+        "is_initialized": symbol.is_initialized,
+    }
+
+
+def _render_scope(scope: Scope, depth: int) -> list[str]:
+    indent = "  " * depth
+    lines = [f"{indent}{scope.kind.value.upper()}"]
+    for symbol in scope.symbols.values():
+        lines.append(f"{indent}  {symbol.name}: {symbol.kind.value} {symbol.type}")
+    for child in scope.children:
+        lines.extend(_render_scope(child, depth + 1))
+    return lines
+
+
 _COMMANDS = {
     "tokens": _cmd_tokens,
     "ast": _cmd_ast,
     "highlight": _cmd_highlight,
     "check": _cmd_check,
+    "symbols": _cmd_symbols,
 }
 
 
