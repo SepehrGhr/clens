@@ -229,5 +229,23 @@ into every name in it.
       command example in the README/testing.md was run for real and its output
       pasted in verbatim, not hand-typed from memory — the `clens complete`
       line/col caught an off-by-one against the fixture on the first attempt.
-- [ ] **P8.5** Coverage back to ≥80%; walk `checklists/phase2-acceptance.md` **and**
+- [x] **P8.5** Coverage back to ≥80%; walk `checklists/phase2-acceptance.md` **and**
       re-walk `checklists/phase1-acceptance.md`. Only then report Phase 2 complete.
+      Coverage: 98%. The walk found five real, previously-untested gaps and fixed
+      each with a real test rather than just ticking the box: no `--json` golden
+      file existed (added `golden_four.diagnostics.json`); the semantic analyzer's
+      robustness battery (empty/comments-only/typedef/random-bytes/unparseable/
+      unbalanced-braces) was only ever exercised *incidentally* through `clens
+      check`, never directly against `analyze()`, and never included `typedef` at
+      all; "forward local reference errors" (the failing half of S2.3's own
+      forward-reference claim) had no test, only the passing half did; "every Expr
+      in every valid fixture has a type_annotation" was only verified against
+      hand-built snippets, never swept across the real fixtures; and
+      `web/server.py`'s `ClensRequestHandler` itself (404s, path traversal, a real
+      POST over a socket, a handler that raises) was untested even though the pure
+      `handle_*` functions it wraps were. Also verified regression concretely, not
+      just by assumption: `docker build` + `docker run --rm clens --help` still
+      work with the new `web/static/` assets bundled into the wheel, and
+      `render/html.py` has zero diff since the Phase 2 environment commit. Both
+      checklists walked; every box ticked is one this session concretely verified.
+      Defense-readiness items are left unchecked — they need a human.
