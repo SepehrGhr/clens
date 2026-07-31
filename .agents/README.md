@@ -1,64 +1,68 @@
 # .agents — agent working environment
 
-Everything an agent needs to build **Phase 1** of this project without re-reading
-the course PDF. Phase 2 and 3 environments get added later.
+Everything an agent needs to build this project without re-reading the course PDF.
+
+**Phase 1: complete.** **Phase 2: current scope.**
 
 ## Start here
 
 1. `AGENTS.md` — master rules. Read every session.
-2. `tasks/phase1-plan.md` — what to do next, in order.
-3. The skill file the task names.
+2. `project/07-phase1-interfaces.md` — the real Phase 1 API surface. Read before
+   writing any Phase 2 code; it prevents guessing at names.
+3. `tasks/phase2-plan.md` — what to do next, in order.
+4. The skill file the task names.
 
 ## Contents
 
 ```
-AGENTS.md                       master rules and hard constraints
+AGENTS.md                          master rules and hard constraints
 project/
-  00-overview.md                what we're building; target repo layout
-  01-phase1-requirements.md     every Phase 1 requirement, with IDs (R1.1 ...)
-  02-decisions.md               settled decisions (D1 ... D14) and rejected options
-  03-c-subset.md                exactly which C features are in and out
-  04-future-phases.md           hooks Phase 2/3 depend on — do not remove them
-  05-deliverables.md            the graded written documents
+  00-overview.md                   what we're building; repo layout
+  01-phase1-requirements.md        Phase 1 requirements (R1.1 ...)      [reference]
+  02-decisions.md                  decisions D1-D14                     [reference]
+  03-c-subset.md                   which C features are in and out
+  04-future-phases.md              Phase 3 hooks — do not remove them
+  05-deliverables.md               Phase 1 graded documents             [reference]
+  06-phase2-requirements.md        Phase 2 requirements (S1.1 ...)      <- current
+  07-phase1-interfaces.md          the REAL Phase 1 API surface         <- read first
+  08-phase2-decisions.md           decisions D15-D24                    <- current
+  09-phase2-deliverables.md        Phase 2 graded documents             <- current
 tasks/
-  phase1-plan.md                ordered task list with commit points
+  phase1-plan.md                   completed                            [reference]
+  phase2-plan.md                   ordered task list                    <- current
 skills/
-  lexer/                        scanning, maximal munch, error recovery
-  parser/                       recursive descent, panic-mode recovery
-  ast-and-visitors/             node design, spans, NodeVisitor
-  highlighter/                  AST-driven categories, ANSI/HTML rendering
-  diagnostics/                  the one LSP-shaped Diagnostic type
-  testing/                      strategy, golden tests, 80% coverage gate
-  git-workflow/                 commit format, cadence, hard rules
-  devops/                       pyproject, Docker, CI, Pages
-  docs-deliverables/            how to write the graded documents
-  pycparser-reference/          using ../pycparser safely — READ BEFORE OPENING IT
+  type-system/                     Type hierarchy, conversions, checking
+  symbol-table/                    Symbol, Scope, cursor queries
+  name-resolution/                 two-pass resolution, shadowing
+  completion-engine/               contexts, ranking, hover
+  web-ui/                          the interactive server and front end
+  diagnostics/                     one Diagnostic type, the thirteen rows
+  lexer/ parser/ ast-and-visitors/ highlighter/     Phase 1             [reference]
+  testing/ git-workflow/ devops/ docs-deliverables/ pycparser-reference/
 checklists/
-  phase1-acceptance.md          the done gate
+  phase1-acceptance.md             regression gate — must stay green
+  phase2-acceptance.md             the done gate                        <- current
 fixtures/
-  valid/ lexical-errors/ syntax-errors/ golden/
+  valid/ lexical-errors/ syntax-errors/ semantic-errors/ golden/
 ```
 
 ## Using the skills with Claude Code
 
-The `skills/` folders use the standard SKILL.md format (YAML frontmatter with
-`name` and `description`, then markdown). To have them auto-trigger:
+Standard SKILL.md format. To have them auto-trigger:
 
 ```bash
 mkdir -p .claude && ln -s ../.agents/skills .claude/skills
 ```
 
-Without that they still work — `AGENTS.md` and the task plan point at them
-explicitly.
-
 ## Reference clone
 
-`../pycparser` sits beside this repo. `skills/pycparser-reference/SKILL.md`
-explains what is safe to take from it and the three specific ways it will mislead
-you. Read that before opening it.
+`../pycparser` sits beside this repo. `skills/pycparser-reference/SKILL.md` explains
+what is safe to take and how it will mislead you. Note that pycparser does **no**
+semantic analysis at all — it has no symbol table and no type checker, so it is of
+much less use in Phase 2 than it was in Phase 1.
 
 ## Keeping this current
 
-When a decision changes, update `project/02-decisions.md` in the same commit.
-When the subset changes, update `project/03-c-subset.md`, `docs/grammar.ebnf`, and
-the parser together. Stale agent docs are worse than none.
+When a decision changes, update the decisions file in the same commit. When an
+interface changes, update `07-phase1-interfaces.md` in the same commit. Stale agent
+docs are worse than none.

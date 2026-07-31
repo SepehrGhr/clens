@@ -1,0 +1,10 @@
+# Expected diagnostics for fixtures/semantic-errors/golden_four.c
+# Course document section 5.3.1 (S4.7). Severities are from the document
+# and must match exactly.
+
+warning  narrowing conversion   int x = 3.14;
+error    assignment type        char *s = 42;
+error    argument type          int y = factorial("hello");
+error    return type            void foo(void) { return 5; }
+
+# Exactly four diagnostics. One warning, three errors.

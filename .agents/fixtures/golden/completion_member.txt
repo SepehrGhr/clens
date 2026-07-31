@@ -1,0 +1,9 @@
+# Golden completion result for fixtures/valid/member_completion.c
+# Cursor immediately after the '.' in `p.x` on the `p.x = 1;` line.
+# Course document section 5.4.
+
+label  kind   detail
+x      Field  int
+y      Field  int
+
+# Exactly two items, in this order. No keywords, no other symbols.
