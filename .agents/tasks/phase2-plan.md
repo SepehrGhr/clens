@@ -44,7 +44,7 @@ into every name in it.
 
 → `skills/symbol-table`.
 
-- [ ] **P2.1** `core/symbols.py`: `SymbolKind`, `Symbol` with **all nine** S1.1
+- [x] **P2.1** `core/symbols.py`: `SymbolKind`, `Symbol` with **all nine** S1.1
       fields, `Reference`. → S1.1
 - [ ] **P2.2** `Scope`: kind, parent, children, ordered symbol map, covered span.
       `declare()`, `lookup_local()`, `lookup()`. → S1.2
@@ -54,6 +54,9 @@ into every name in it.
 - [ ] **P2.5** Tests for nesting, shadowing lookups, offset queries at scope
       boundaries (first char, last char, one past the end).
 - [ ] **P2.6** `clens symbols <file>` CLI command + `--json`. → S8.1
+      Deferred to Stage 3: needs `analyze()` (P3.1-P3.2) to produce a real
+      `SemanticModel` to serve. Decided with the user rather than stubbing a
+      throwaway single-pass walk just to exercise the CLI early.
 
 ## Stage 3 — Name resolution (≈6 commits)
 
