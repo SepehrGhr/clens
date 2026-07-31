@@ -14,12 +14,12 @@ about. It is a closed hierarchy of six frozen, structurally-compared
 variants:
 
 ```python
-PrimitiveType(name)          # "void" | "char" | "int" | "float" | "double"
+PrimitiveType(name)  # "void" | "char" | "int" | "float" | "double"
 PointerType(pointee)
-ArrayType(element, size)     # size: int | None
-StructType(name, decl)       # decl links to the real StructDecl, for field lookup
-FunctionType(params, ret)    # params: tuple[Type, ...]
-UnknownType()                # the error-suppression device — see below
+ArrayType(element, size)  # size: int | None
+StructType(name, decl)  # decl links to the real StructDecl, for field lookup
+FunctionType(params, ret)  # params: tuple[Type, ...]
+UnknownType()  # the error-suppression device — see below
 ```
 
 `void` is a `PrimitiveType`, not its own variant (D16) — it behaves like any

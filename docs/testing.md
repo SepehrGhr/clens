@@ -83,6 +83,31 @@ Open `out.html` in a browser — it is a self-contained file, no server or
 JavaScript needed. Any subcommand also accepts `--json` for machine-readable
 output.
 
+## 9b. Try the Phase 2 commands
+
+```bash
+clens symbols tests/fixtures/valid/factorial.c                          # scope tree
+clens symbols tests/fixtures/valid/factorial.c --json
+clens complete tests/fixtures/valid/member_completion.c 14 7            # p.| -> x, y
+clens hover tests/fixtures/valid/doc_comments.c 5 6                     # factorial's signature + doc comment
+```
+
+`complete`/`hover` take a 1-based `<line> <col>`, same convention as an
+editor's cursor position. All four accept `--json` too.
+
+## 9c. Try the web UI
+
+```bash
+clens serve --port 8000
+```
+
+Open `http://127.0.0.1:8000/` — a `<textarea>` editor next to the live
+AST-highlighted pane, re-analyzed on every keystroke (~300ms debounced).
+Type `.` or `->` (or press Ctrl+Space anywhere) for a completion popup;
+click a token in the highlighted pane for a hover card; click a row in the
+Diagnostics panel to jump the editor to it. No build step — `web/static/`
+is served as-is. See the README's "Web UI" section for screenshots.
+
 ## 10. Docker
 
 ```bash
@@ -104,17 +129,26 @@ docker run --rm -v "$PWD/tests/fixtures/valid:/work" clens highlight /work/facto
 | CLI: all four subcommands, exit codes, robustness | `test_cli.py` |
 | Layering guard (`core/` never imports `languages/`) | `test_layering.py` |
 | Golden snapshots (course-document AST/tokens, rendered `factorial.c`) | `tests/golden/test_golden.py`, `test_ast_printer.py` |
+| **Phase 2** — types, symbols, scopes | `test_types.py`, `test_symbols.py`, `test_scopes.py`, `test_semantic_model.py` |
+| Name resolution: two-pass, prototypes, diagnostics, `ErrorStmt` robustness | `test_resolver_pass1.py`, `test_resolver_pass2.py`, `test_resolver_prototypes.py`, `test_resolver_diagnostics.py`, `test_resolver_stage3_sweep.py` |
+| Type checking: expressions, members/calls, assignment/return, the S4.7 golden four, no-cascade | `test_typecheck.py`, `test_typecheck_member_and_calls.py`, `test_typecheck_assignment_and_return.py`, `test_golden_four.py`, `test_no_cascade.py` |
+| Crude use-before-init / unused-variable checks | `test_usage.py` |
+| All thirteen S6.1 diagnostic rows, one test each | `test_diagnostics_thirteen_rows.py` |
+| Completion and hover: context detection, member/general/argument completion, ranking, hover | `test_queries_context.py`, `test_queries_completion_member.py`, `test_queries_completion_general.py`, `test_queries_ranking.py`, `test_queries_hover.py` |
+| Web UI: interactive renderer, HTTP backend (handler-level, no socket, plus one live smoke test) | `test_web_renderer.py`, `test_web_server.py` |
 
 All tests live under `tests/unit/` except the golden snapshot tests, which
 live under `tests/golden/`. `tests/fixtures/` mirrors `.agents/fixtures/` —
-valid programs, lexical-error programs, syntax-error programs, and the
-course-document golden expectations.
+valid programs, lexical-error programs, syntax-error programs, semantic-error
+programs, and the course-document golden expectations.
 
 ## 12. Requirement traceability
 
 Every requirement ID from `.agents/project/01-phase1-requirements.md` (`R1.1`,
-`R3.4`, ...) appears in at least one test's docstring or name:
+`R3.4`, ...) and `.agents/project/06-phase2-requirements.md` (`S1.1`, `S4.7`,
+`S6.1`, ...) appears in at least one test's docstring or name:
 
 ```bash
 grep -rn "R3\.4" tests/
+grep -rn "S4\.7" tests/
 ```

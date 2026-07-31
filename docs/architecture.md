@@ -2,27 +2,48 @@
 
 ## Pipeline
 
+Phase 1 ends at the highlighter. Phase 2 adds one more stage —
+`languages/c/semantic.py::analyze()` — between the parser and everything
+that reads a type-annotated, name-resolved program: the highlighter still
+only needs the AST (highlighting predates and does not depend on semantic
+analysis), but completion, hover, and `clens check`'s semantic diagnostics
+all read `analyze()`'s output.
+
 ```
-                 ┌─────────────────────────────────────────────────────────┐
-                 │                      DiagnosticCollector                 │
-                 └───────────▲───────────────▲───────────────▲─────────────┘
-                             │               │               │
-SourceFile ──► Lexer ──► tokens ──► Parser ──► AST ──► Highlighter ──► HighlightMap
- (source.py)  (lexer_base +          (parser_base +            (highlight.py +
-               token_rules.py,        parser.py)                theme.py +
-               lexer.py)                                        highlighter.py)
-                                                                       │
-                                                                       ▼
-                                                          render/ansi.py, render/html.py
-                                                                       │
-                                                                       ▼
-                                                              ANSI text / HTML file
+                 ┌───────────────────────────────────────────────────────────────────────┐
+                 │                          DiagnosticCollector                          │
+                 └──────▲──────────────▲──────────────▲───────────────────▲──────────────┘
+                        │              │              │                   │
+SourceFile ──► Lexer ──► tokens ──► Parser ──► AST ──┬──► Highlighter ──► HighlightMap
+ (source.py)  (lexer_base +      (parser_base +      │        │
+               token_rules.py,    parser.py)         │        ▼
+               lexer.py)                             │  render/ansi.py, render/html.py,
+                                                       │  web/renderer.py
+                                                       │        │
+                                                       │        ▼
+                                                       │  ANSI text / HTML file / interactive HTML
+                                                       │
+                                                       ▼
+                                              analyze() = resolve() + type_check() + check_usage()
+                                              (resolver.py, typecheck.py, usage.py)
+                                                       │
+                                                       ▼
+                                                SemanticModel (scope tree, typed AST, diagnostics)
+                                                       │
+                                                       ▼
+                                        languages/c/queries.py: completions_at, hover_at,
+                                        symbols_of, diagnostics_of
+                                                       │
+                                                       ▼
+                                          cli/main.py and web/server.py — thin adapters
 ```
 
 Everything produces diagnostics into one `DiagnosticCollector`, passed explicitly
 through the pipeline (never a global — see `core/diagnostics.py`). Nothing raises to
 the caller; `clens.cli.main.main()` is the only place a truly unexpected exception is
-ever caught, and that path is meant to be unreachable (R7.1's exit code `2`).
+ever caught, and that path is meant to be unreachable (R7.1's exit code `2`). The web
+server (`web/server.py`) has the same guarantee at its own boundary: a handler that
+somehow raises becomes a `500` JSON response, never a crashed process.
 
 ## Modules
 
@@ -44,12 +65,39 @@ ever caught, and that path is meant to be unreachable (R7.1's exit code `2`).
 | `languages/c/parser.py` | Recursive-descent grammar functions, one per non-terminal; `parse()` entry point |
 | `languages/c/highlighter.py` | Two-pass highlighter: token defaults, then AST-context upgrades |
 | `render/ansi.py`, `render/html.py` | Consume one `HighlightMap` identically; slice `source.text` by offset, never reconstruct from lexemes |
-| `cli/main.py` | `tokens`/`ast`/`highlight`/`check` subcommands, `--json`, `-o`, exit codes |
+| `cli/main.py` | All subcommands (`tokens`/`ast`/`highlight`/`check`/`symbols`/`complete`/`hover`/`serve`), `--json`, `-o`, exit codes |
 
 `src/clens/core/**` never imports from `languages/` — enforced by
 `tests/unit/test_layering.py` (D12). This is what makes the multi-language bonus
 (Java, planned but not started — D13) a new `languages/java/` directory rather than
 a rewrite.
+
+### Phase 2 additions
+
+| Module | Responsibility |
+|---|---|
+| `core/types.py` | The semantic `Type` hierarchy, the conversion rank table, `is_assignable` — see `docs/type-system.md` |
+| `core/symbols.py` | `Symbol` (all nine S1.1 fields), `SymbolKind`, `Reference` |
+| `core/scopes.py` | `Scope`, `ScopeKind`, `scope_at`/`symbols_visible_at` (D20's offset-based queries) |
+| `languages/c/typecheck.py` | `resolve_type_spec` (`TypeSpec` → `Type`) and the whole expression-typing walk (`type_check`) |
+| `languages/c/resolver.py` | Two-pass name resolution: `scan_declarations` (Pass 1), `resolve` (Pass 1 + Pass 2) — see `docs/semantic-analysis.md` |
+| `languages/c/usage.py` | The crude use-before-init / unused-variable checks (S6.3) |
+| `languages/c/semantic.py` | `SemanticModel`, `analyze()` — the Phase 2 entry point, mirroring `parse()` |
+| `languages/c/queries.py` | The one query layer (D23): `completions_at`, `hover_at`, `symbols_of`, `diagnostics_of`, plus `scope_to_dict`/`symbol_to_dict` for the CLI and web JSON shapes |
+| `web/renderer.py` | The interactive HTML renderer (`data-*` offsets, no document shell) — separate from `render/html.py`, which stays frozen and JS-free |
+| `web/server.py` | stdlib `http.server` backend: `GET /`, `GET /static/*`, `POST /api/{analyze,complete,hover}` |
+| `web/static/` | `index.html`, `app.js`, `style.css` — the vanilla-JS front end (no framework, no build step) |
+
+`core/types.py`, `core/symbols.py`, and `core/scopes.py` are core (language-
+agnostic). `SemanticModel`, `resolve_type_spec`, and everything in
+`languages/c/queries.py` live in `languages/c/` instead, even though some of
+the course document's own illustrative snippets show them as `core/*` —
+each embeds or is parameterized over the C-specific AST (`ast.Program`,
+`TypeSpec`), so putting them in `core/` would violate the same
+core-never-imports-`languages/` rule Phase 1 established. `scope_at` and
+`symbols_visible_at` are the one exception that *does* stay in `core/`:
+they operate on a plain `Scope`, not a `SemanticModel`, so nothing about
+them is C-specific.
 
 ## Why recursive descent, not a parser generator (R2.4)
 

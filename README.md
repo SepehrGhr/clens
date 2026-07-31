@@ -3,30 +3,37 @@
 ![CI](https://github.com/SepehrGhr/clens/actions/workflows/ci.yml/badge.svg)
 
 **clens** is a code-aware IDE feature set for a subset of C, built from scratch:
-a hand-written lexer, a recursive-descent parser, an AST, and a syntax
-highlighter that consults the AST instead of just the token stream — so it can
-tell a function call apart from a bare variable reference, which a regex-based
-highlighter cannot do.
+a hand-written lexer, a recursive-descent parser, an AST, a syntax highlighter
+that consults the AST instead of just the token stream (so it can tell a
+function call apart from a bare variable reference, which a regex-based
+highlighter cannot do), two-pass name resolution, a semantic type checker,
+an auto-completion and hover engine, and an interactive web UI.
 
-This is **Phase 1** of a three-phase university Compiler Design project. Phase 2
-(symbol table, type checking) and Phase 3 (CFG, call graph, refactoring) are out
-of scope for now; see `.agents/project/04-future-phases.md` for the hooks Phase 1
-already leaves in place for them.
+This is **Phase 1 and Phase 2** of a three-phase university Compiler Design
+project. Phase 3 (CFG, call graph, safe rename, go-to-definition/find-all-
+references) is out of scope for now; see `.agents/project/04-future-phases.md`
+for the hooks already left in place for it.
 
 ## Pipeline
 
 ```
-SourceFile ──► Lexer ──► tokens ──► Parser ──► AST ──► Highlighter ──► HighlightMap
-                                                                            │
-                                                          render/ansi.py ◄──┼──► render/html.py
-                                                                            │
-                                                            ANSI text        HTML file
+SourceFile ─► Lexer ─► tokens ─► Parser ─► AST ─┬─► Highlighter ─► HighlightMap
+                                                 │                       │
+                                                 │                       ▼
+                                                 │        render/ansi.py, render/html.py,
+                                                 │        web/renderer.py
+                                                 │
+                                                 └─► analyze() ─► SemanticModel ─► completions_at,
+                                                     (resolution,                  hover_at
+                                                      type checking,                (languages/c/queries.py)
+                                                      usage checks)
 ```
 
 Every stage feeds one shared `DiagnosticCollector`. Nothing raises past its own
-boundary — a file with lexical or syntax errors still gets highlighted for
-everything that *did* parse. See `docs/architecture.md` for the full
-module-by-module breakdown and the reasoning behind each design choice.
+boundary — a file with lexical, syntax, *or* semantic errors still gets
+highlighted, resolved, and type-checked for everything that *did* work. See
+`docs/architecture.md` for the full module-by-module breakdown, and
+`docs/semantic-analysis.md` / `docs/type-system.md` for the Phase 2 passes.
 
 ## Install
 
@@ -51,11 +58,16 @@ clens tokens <file.c>                                   # dump the token stream
 clens ast <file.c>                                      # pretty-print the AST
 clens highlight <file.c>                                 # ANSI-colored, to your terminal
 clens highlight <file.c> --format html -o out.html        # self-contained HTML file
-clens check <file.c>                                      # diagnostics only
+clens check <file.c>                                      # lexer + parser + semantic diagnostics
+clens symbols <file.c>                                    # the scope tree and symbol table
+clens complete <file.c> <line> <col>                       # completion list at a cursor
+clens hover <file.c> <line> <col>                          # signature, scope, doc comment
+clens serve --port 8000                                    # interactive web UI at 127.0.0.1:8000
 ```
 
 Every subcommand accepts `--json` for machine-readable output and `-o FILE` to
-write to a file instead of stdout. Exit codes: `0` clean, `1` diagnostics with
+write to a file instead of stdout (`serve` has neither — it's not file-based).
+Exit codes: `0` clean, `1` diagnostics with
 an error present, `2` internal failure (meant to be unreachable — the tool
 never crashes, see `docs/known-limitations.md` and rule 1 in
 `.agents/AGENTS.md`).
@@ -94,6 +106,27 @@ $ clens check tests/fixtures/syntax-errors/missing_expression.c
 tests/fixtures/syntax-errors/missing_expression.c:1:9: error: expected expression, got ';'
   1 | int x = ;
     |         ^
+$ echo $?
+1
+```
+
+`clens check` on the course document's own four worked type-checking
+examples (§5.3.1) — one warning, three errors, exactly as specified:
+
+```
+$ clens check tests/fixtures/semantic-errors/golden_four.c
+tests/fixtures/semantic-errors/golden_four.c:9:9: warning: conversion from 'double' to 'int' may lose precision
+  9 | int x = 3.14;
+    |         ^^^^
+tests/fixtures/semantic-errors/golden_four.c:10:11: error: cannot assign 'int' to 'char*'
+  10 | char *s = 42;
+     |           ^^
+tests/fixtures/semantic-errors/golden_four.c:11:19: error: argument 1: expected 'int', got 'char*'
+  11 | int y = factorial("hello");
+     |                   ^^^^^^^
+tests/fixtures/semantic-errors/golden_four.c:12:18: error: void function should not return a value
+  12 | void foo(void) { return 5; }
+     |                  ^^^^^^^^^
 $ echo $?
 1
 ```
@@ -144,7 +177,9 @@ tree on the right:
 | [`docs/grammar.ebnf`](docs/grammar.ebnf) | The complete EBNF for the implemented C subset |
 | [`docs/first-follow.md`](docs/first-follow.md) | FIRST/FOLLOW sets and the documented ambiguity resolutions |
 | [`docs/lexical-specification.md`](docs/lexical-specification.md) | Formal regexes per token class, the NFA→DFA→minimization theory, a worked example |
-| [`docs/known-limitations.md`](docs/known-limitations.md) | Every excluded C feature, with its reason |
+| [`docs/semantic-analysis.md`](docs/semantic-analysis.md) | The scope model, the two-pass resolution algorithm, the symbol table, worked example |
+| [`docs/type-system.md`](docs/type-system.md) | The `Type` hierarchy, conversion rules, per-node typing table, `UnknownType`/no-cascade |
+| [`docs/known-limitations.md`](docs/known-limitations.md) | Every excluded C feature and every Phase 2 approximation, with its reason |
 | [`docs/testing.md`](docs/testing.md) | Copy-pasteable instructions to set up, run, and reproduce every test |
 | [`docs/team.md`](docs/team.md) | Module ownership split |
 | [`docs/third-party.md`](docs/third-party.md) | pycparser, credited as a design reference |

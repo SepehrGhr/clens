@@ -222,7 +222,12 @@ into every name in it.
       rules, and the attribute-grammar framing the course document asks for.
 - [x] **P8.3** `docs/known-limitations.md` — append Phase 2 entries (S4.8 N/A,
       S5.2 `::` N/A, S6.3 crude rows, the S5.6 fixture deviation).
-- [ ] **P8.4** README: new commands, web UI screenshots, updated pipeline diagram.
+- [x] **P8.4** README: new commands, web UI screenshots, updated pipeline diagram.
       `docs/testing.md` updated with the new commands.
+      Also updated `docs/architecture.md`'s own pipeline diagram and module table
+      (the docs-deliverables skill says the diagram belongs in both places). Every
+      command example in the README/testing.md was run for real and its output
+      pasted in verbatim, not hand-typed from memory — the `clens complete`
+      line/col caught an off-by-one against the fixture on the first attempt.
 - [ ] **P8.5** Coverage back to ≥80%; walk `checklists/phase2-acceptance.md` **and**
       re-walk `checklists/phase1-acceptance.md`. Only then report Phase 2 complete.
