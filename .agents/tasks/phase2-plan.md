@@ -150,8 +150,14 @@ into every name in it.
       approximation was meant to catch — confirmed against member_errors.c,
       which declares `struct Point p;`/`struct Point *q;` with no
       initializer specifically to test member access, not row 12.
-- [ ] **P6.2** Audit all thirteen rows against the table; one test per row asserting
+- [x] **P6.2** Audit all thirteen rows against the table; one test per row asserting
       severity and code. → S6.1
+      Found a real Phase 1 gap while auditing: parser errors (rows 3/4) never set
+      a `code` at all (`ParserBase.error()`/`fail()` had no such parameter).
+      Fixed in this stage: `expect()` now passes `E011-missing-closing-delimiter`
+      when the expected lexeme is `)`/`}`/`]`, else `fail()` defaults to
+      `E010-unexpected-token`. Verified the full suite (Phase 1 included) stays
+      green — no test asserted `code is None` for a parser diagnostic.
 - [ ] **P6.3** `clens check` now runs lexer + parser + semantic in one pass, sorted,
       deduplicated. → S8.1
 - [ ] **P6.4** `clens complete` and `clens hover` CLI commands + `--json`. → S8.1

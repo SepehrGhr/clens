@@ -13,6 +13,11 @@ from clens.core.token import Token, TokenType
 
 __all__ = ["ParseError", "ParserBase"]
 
+#: expect()'s target lexeme decides which of S6.1's two parser rows a
+#: failure is: a missing ), }, or ] is row 4 (E011); anything else expected
+#: but not found is row 3's general "unexpected token" (E010).
+_CLOSING_DELIMITERS = frozenset({")", "}", "]"})
+
 
 class ParseError(Exception):
     """Internal control-flow signal raised by `expect()`/`fail()` on a
@@ -97,7 +102,8 @@ class ParserBase:
         if self.check(type_) and self.peek().lexeme == lexeme:
             return self.advance()
         suffix = f" {context}" if context else ""
-        self.fail(f"expected '{lexeme}'{suffix}, got {self._describe_current()}")
+        code = "E011-missing-closing-delimiter" if lexeme in _CLOSING_DELIMITERS else None
+        self.fail(f"expected '{lexeme}'{suffix}, got {self._describe_current()}", code=code)
 
     def expect_type(self, type_: TokenType, description: str, context: str = "") -> Token:
         """Consume a token of `type_` regardless of lexeme (e.g. any
@@ -108,16 +114,20 @@ class ParserBase:
         suffix = f" {context}" if context else ""
         self.fail(f"expected {description}{suffix}, got {self._describe_current()}")
 
-    def fail(self, message: str) -> None:
+    def fail(self, message: str, *, code: str | None = None) -> None:
         """Emit a diagnostic at the current token and raise ParseError.
         Never returns (return type is None only because Python has no
         bottom type without extra ceremony; callers should treat this as
         unreachable after the call).
+
+        `code` defaults to S6.1 row 3's general `E010-unexpected-token`;
+        pass an explicit `code` (as `expect()` does for a missing closing
+        delimiter) when the failure is more specific than that.
         """
-        self.error(message)
+        self.error(message, code=code or "E010-unexpected-token")
         raise ParseError(message)
 
-    def error(self, message: str, token: Token | None = None) -> None:
+    def error(self, message: str, token: Token | None = None, *, code: str | None = None) -> None:
         """Record a diagnostic without raising — for recoverable notices
         (e.g. "unsupported construct") that don't need panic-mode.
         """
@@ -130,6 +140,7 @@ class ParserBase:
                 file=token.file,
                 start=Position(token.line, token.column, token.start_offset),
                 end=Position(token.line, end_column, token.end_offset),
+                code=code,
             )
         )
 
