@@ -216,7 +216,7 @@ into every name in it.
 
 ## Stage 8 — Docs and gate (≈5 commits)
 
-- [ ] **P8.1** `docs/semantic-analysis.md` — scope model, resolution algorithm,
+- [x] **P8.1** `docs/semantic-analysis.md` — scope model, resolution algorithm,
       symbol table structure. → deliverable
 - [ ] **P8.2** `docs/type-system.md` — the type lattice, conversion table, checking
       rules, and the attribute-grammar framing the course document asks for.
