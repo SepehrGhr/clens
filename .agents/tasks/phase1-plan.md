@@ -107,21 +107,21 @@ must satisfy.
 
 → `skills/highlighter`.
 
-- [ ] **T5.1** `core/highlight.py`: `Category` enum (all twelve of R5.2),
+- [x] **T5.1** `core/highlight.py`: `Category` enum (all twelve of R5.2),
       `HighlightMap` = `token_index -> Category`.
-- [ ] **T5.2** `core/theme.py`: VS Code Dark+ values, category → (ANSI, CSS).
-- [ ] **T5.3** `languages/c/highlighter.py`: token-level defaults, then an AST walk
+- [x] **T5.2** `core/theme.py`: VS Code Dark+ values, category → (ANSI, CSS).
+- [x] **T5.3** `languages/c/highlighter.py`: token-level defaults, then an AST walk
       that *upgrades* categories — call callees to `function`, declared function
       names to `function`, type specifiers to `type`, struct names to `type_name`.
       → R5.1
-- [ ] **T5.4** `render/ansi.py` and `render/html.py`, both consuming the same map
+- [x] **T5.4** `render/ansi.py` and `render/html.py`, both consuming the same map
       and iterating the original source by offset. HTML: escaping, embedded CSS,
       no JavaScript. → R5.3, R6.1, R6.2, R6.3
-- [ ] **T5.5** **The R5.1 acceptance test**: a fixture where the same identifier
+- [x] **T5.5** **The R5.1 acceptance test**: a fixture where the same identifier
       appears as a call and as a bare variable; assert different categories. Plus
       the round-trip test: strip color from output, diff against input, expect zero
       differences.
-- [ ] **T5.6** Golden snapshot tests for ANSI and HTML output of `factorial.c`.
+- [x] **T5.6** Golden snapshot tests for ANSI and HTML output of `factorial.c`.
 
 ## Stage 6 — CLI, docs, polish (≈7 commits)
 
