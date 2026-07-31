@@ -399,10 +399,16 @@ class Parser(ParserBase):
             self.advance()
             is_const = True
 
+        struct_name_span: ast.Span | None = None
         if self.check_lexeme("struct"):
             self.advance()
             name_token = self.expect_type(TokenType.IDENT, "struct tag name")
-            base, struct_name, end_token = "struct", name_token.lexeme, name_token
+            base, struct_name, struct_name_span, end_token = (
+                "struct",
+                name_token.lexeme,
+                name_token.span,
+                name_token,
+            )
         elif self.check(TokenType.KEYWORD) and self.peek().lexeme in BASE_TYPE_KEYWORDS:
             base_token = self.advance()
             base, struct_name, end_token = base_token.lexeme, None, base_token
@@ -418,6 +424,7 @@ class Parser(ParserBase):
             span=join(start_token.span, end_token.span),
             base=base,
             struct_name=struct_name,
+            struct_name_span=struct_name_span,
             pointer_depth=pointer_depth,
             is_const=is_const,
             storage=storage,

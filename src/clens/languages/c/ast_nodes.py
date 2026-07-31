@@ -69,6 +69,10 @@ class TypeSpec(Node):
 
     base: str  # "void" | "char" | "int" | "float" | "double" | "struct"
     struct_name: str | None = None
+    #: Span of just the struct tag token (e.g. 'Point' in 'struct Point');
+    #: None unless base == "struct". The highlighter needs this to color
+    #: the tag as a type reference — to the lexer it's a plain IDENT.
+    struct_name_span: Span | None = None
     pointer_depth: int = 0
     is_const: bool = False
     storage: str | None = None  # "static" | "extern" | "volatile" | "register"
