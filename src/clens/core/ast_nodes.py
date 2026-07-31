@@ -9,9 +9,12 @@ lexer, the parser, and diagnostics all agree on what "where" means.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import ClassVar
+from typing import TYPE_CHECKING, ClassVar
 
 from clens.core.token import Span
+
+if TYPE_CHECKING:
+    from clens.core.types import Type
 
 __all__ = ["Decl", "ErrorExpr", "ErrorStmt", "Expr", "Node", "Stmt", "join"]
 
@@ -42,11 +45,12 @@ class Expr(Node):
     """Base for expression nodes."""
 
     # Filled in by Phase 2's semantic analyzer; untouched (always None) in
-    # Phase 1. `Type` does not exist yet, so this is an intentionally
-    # unresolved forward reference rather than a real import — nothing in
-    # Phase 1 calls typing.get_type_hints() on AST nodes, so it is never
-    # evaluated.
-    type_annotation: Type | None = None  # noqa: F821
+    # Phase 1. `Type` is imported under TYPE_CHECKING only: nothing here
+    # needs it at runtime (`from __future__ import annotations` keeps the
+    # annotation a string), and core/types.py itself references this
+    # module's `Node` under TYPE_CHECKING for `StructType.decl` — a real
+    # top-level import on both sides would be a runtime circular import.
+    type_annotation: Type | None = None
 
 
 @dataclass(slots=True)

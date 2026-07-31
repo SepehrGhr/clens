@@ -2,6 +2,7 @@
 
 from clens.core.ast_nodes import Decl, ErrorExpr, ErrorStmt, Expr, Node, Stmt, join
 from clens.core.token import Span
+from clens.core.types import PrimitiveType
 
 
 def make_span(start: int, end: int, line: int = 1, column: int = 1) -> Span:
@@ -16,6 +17,14 @@ def test_node_carries_span():
 def test_expr_type_annotation_defaults_to_none():
     expr = Expr(span=make_span(0, 1))
     assert expr.type_annotation is None
+
+
+def test_expr_type_annotation_holds_a_real_type():
+    """P1.5: the forward reference is wired to the real Type, not just a
+    placeholder string."""
+    expr = Expr(span=make_span(0, 1))
+    expr.type_annotation = PrimitiveType("int")
+    assert expr.type_annotation == PrimitiveType("int")
 
 
 def test_stmt_and_decl_carry_span_with_no_extra_fields():

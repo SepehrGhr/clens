@@ -35,7 +35,7 @@ into every name in it.
       ok / warn-narrowing / error, so callers do not re-derive severity. → S4.5
 - [x] **P1.4** `resolve_type_spec(spec, scope) -> Type` — bridges syntactic to
       semantic, resolving `struct Point` against the scope. → D15
-- [ ] **P1.5** Wire `Expr.type_annotation`'s forward reference to the real `Type`
+- [x] **P1.5** Wire `Expr.type_annotation`'s forward reference to the real `Type`
       under `TYPE_CHECKING`; remove the `# noqa: F821`.
 - [ ] **P1.6** Tests: every conversion pair in the rank table, pointer rules,
       `unknown` absorbing everything (D17), `__str__` for every variant.
