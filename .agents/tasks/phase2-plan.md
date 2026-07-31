@@ -218,7 +218,7 @@ into every name in it.
 
 - [x] **P8.1** `docs/semantic-analysis.md` — scope model, resolution algorithm,
       symbol table structure. → deliverable
-- [ ] **P8.2** `docs/type-system.md` — the type lattice, conversion table, checking
+- [x] **P8.2** `docs/type-system.md` — the type lattice, conversion table, checking
       rules, and the attribute-grammar framing the course document asks for.
 - [ ] **P8.3** `docs/known-limitations.md` — append Phase 2 entries (S4.8 N/A,
       S5.2 `::` N/A, S6.3 crude rows, the S5.6 fixture deviation).
