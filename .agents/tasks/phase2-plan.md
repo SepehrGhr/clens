@@ -54,8 +54,10 @@ into every name in it.
       cannot live in core, so these stay pure core functions over `Scope`
       directly. `analyze()`'s caller (or Stage 5's `core/queries.py`) passes
       `model.global_scope`.
-- [ ] **P2.4** `SemanticModel`: global scope, scope tree, flat symbol index,
+- [x] **P2.4** `SemanticModel`: global scope, scope tree, flat symbol index,
       annotated AST. → D19
+      Lives in `languages/c/semantic.py`, not `core/`: it embeds `ast.Program`
+      (C-specific), same layering reason as `resolve_type_spec`.
 - [ ] **P2.5** Tests for nesting, shadowing lookups, offset queries at scope
       boundaries (first char, last char, one past the end).
 - [ ] **P2.6** `clens symbols <file>` CLI command + `--json`. → S8.1
