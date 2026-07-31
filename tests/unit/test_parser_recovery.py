@@ -4,6 +4,7 @@ course document, and the real fixture files from .agents/fixtures/syntax-errors.
 
 from pathlib import Path
 
+from clens.core.ast_nodes import ErrorExpr
 from clens.core.diagnostics import DiagnosticCollector
 from clens.core.source import SourceFile
 from clens.languages.c import ast_nodes as ast
@@ -24,7 +25,10 @@ def parse_fixture(name: str) -> tuple[ast.Program, DiagnosticCollector]:
 
 def test_golden_missing_expression_recovers_and_continues():
     """R3.3/R3.4 golden case: 'int x = ;' errors at 1:9, 'int y = 42;'
-    still parses.
+    still parses. 'x' itself is also preserved -- as a VarDecl with an
+    ErrorExpr initializer, rather than dropped -- since the expression
+    failure is caught right where it happens (R3.4: partial results, not
+    just 'skip and lose the surrounding declaration').
     """
     program, diagnostics = parse_fixture("missing_expression.c")
 
@@ -33,9 +37,11 @@ def test_golden_missing_expression_recovers_and_continues():
     assert error.message == "expected expression, got ';'"
     assert (error.start.line, error.start.column) == (1, 9)
 
-    names = [d.name for d in program.declarations if isinstance(d, ast.VarDecl)]
-    assert "y" in names
-    y = next(d for d in program.declarations if getattr(d, "name", None) == "y")
+    x, y = program.declarations
+    assert x.name == "x"
+    assert isinstance(x.init, ErrorExpr)
+    assert x.init.message == "expected expression, got ';'"
+    assert y.name == "y"
     assert y.init.value == 42
 
 
@@ -83,3 +89,29 @@ def test_recovery_never_raises_and_always_terminates():
         diagnostics = DiagnosticCollector()
         program = parse(source, diagnostics)  # must not raise
         assert isinstance(program, ast.Program)
+
+
+def test_error_expr_reachable_in_a_return_statement():
+    """'return 1 + ;' fails partway through the expression (after '1 +'),
+    landing on the ';' the caller expects next -- clean single-diagnostic
+    recovery. ('return ;' alone is valid syntax -- a bare return -- and
+    never even attempts to parse an expression, so it wouldn't exercise
+    this path.)"""
+    program, diagnostics = parse_program("int f(void) { return 1 + ; }")
+    func = program.declarations[0]
+    return_stmt = func.body.body[0]
+    assert isinstance(return_stmt, ast.ReturnStmt)
+    assert isinstance(return_stmt.value, ErrorExpr)
+    assert len(diagnostics.errors) == 1
+
+
+def test_error_expr_reachable_in_an_expression_statement():
+    """'1 + ;' fails partway through (after consuming '1 +'), landing
+    exactly on the ';' the caller expects next -- a clean single-diagnostic
+    recovery, same shape as the declarator-initializer golden case."""
+    program, diagnostics = parse_program("int f(void) { 1 + ; return 1; }")
+    func = program.declarations[0]
+    assert any(
+        isinstance(s, ast.ExprStmt) and isinstance(s.expr, ErrorExpr) for s in func.body.body
+    )
+    assert len(diagnostics.errors) == 1

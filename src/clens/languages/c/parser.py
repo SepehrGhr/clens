@@ -19,7 +19,7 @@ right-hand side instead, for right associativity.
 
 from __future__ import annotations
 
-from clens.core.ast_nodes import ErrorStmt, join
+from clens.core.ast_nodes import ErrorExpr, ErrorStmt, join
 from clens.core.diagnostics import DiagnosticCollector
 from clens.core.parser_base import ParseError, ParserBase
 from clens.core.source import SourceFile
@@ -395,14 +395,32 @@ class Parser(ParserBase):
         return_token = self.advance()  # "return"
         value: ast.Expr | None = None
         if not self.check_lexeme(";"):
-            value = self.parse_expression()
+            value = self._parse_expr_or_error()
         semi = self.expect(TokenType.DELIMITER, ";", "after 'return'")
         return ast.ReturnStmt(span=join(return_token.span, semi.span), value=value)
 
     def parse_expr_stmt(self) -> ast.Stmt:
-        expr = self.parse_expression()
+        expr = self._parse_expr_or_error()
         semi = self.expect(TokenType.DELIMITER, ";", "after expression statement")
         return ast.ExprStmt(span=join(expr.span, semi.span), expr=expr)
+
+    def _parse_expr_or_error(self) -> ast.Expr:
+        """Parse an expression; on failure, build an `ErrorExpr` from the
+        failure point instead of letting `ParseError` propagate (R3.4's
+        "partial results" contract, applied at expression granularity
+        where it is cheap and safe: the diagnostic is already recorded by
+        `fail()`, and in the common case — the failure sits right before
+        the token the caller expects next, e.g. `int x = ;` — the caller's
+        own `expect()` call re-synchronizes for free). Harder cases still
+        fall through to the coarser statement-level `ErrorStmt` recovery
+        in `parse_block`/`parse_program`, since that `expect()` call then
+        raises in turn.
+        """
+        start_token = self.peek()
+        try:
+            return self.parse_expression()
+        except ParseError:
+            return ErrorExpr(span=start_token.span, message=self._last_error())
 
     def _last_error(self) -> str:
         if self.diagnostics.diagnostics:
@@ -510,7 +528,7 @@ class Parser(ParserBase):
             last_span = close.span
         init: ast.Expr | None = None
         if self.match_lexeme("="):
-            init = self.parse_assignment_expr()
+            init = self._parse_expr_or_error()
             last_span = init.span
         return ast.VarDecl(
             span=join(base_type.span, last_span),
