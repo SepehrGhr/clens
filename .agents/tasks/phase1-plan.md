@@ -130,10 +130,10 @@ must satisfy.
       reaches the user.
 - [x] **T6.2** CLI tests including empty file, comments-only file, binary garbage,
       nonexistent path, and a directory passed as a file. → R9.5
-- [ ] **T6.3** CI: generate highlighted HTML for the canonical fixture and publish
+- [x] **T6.3** CI: generate highlighted HTML for the canonical fixture and publish
       to GitHub Pages. → R9.4
-- [ ] **T6.4** `docs/architecture.md`, `docs/known-limitations.md`. → D4, D5
-- [ ] **T6.5** `docs/testing.md`, `docs/team.md`. → D6, D7
+- [x] **T6.4** `docs/architecture.md`, `docs/known-limitations.md`. → D4, D5
+- [x] **T6.5** `docs/testing.md`, `docs/team.md`. → D6, D7
 - [ ] **T6.6** `README.md`: summary, pipeline diagram, install, quickstart, usage
       with real output, badge, doc links. → D8
 - [ ] **T6.7** Coverage pass to ≥80%; fill the gaps with real tests, never with
