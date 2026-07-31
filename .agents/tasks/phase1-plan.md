@@ -125,10 +125,10 @@ must satisfy.
 
 ## Stage 6 — CLI, docs, polish (≈7 commits)
 
-- [ ] **T6.1** `cli/main.py`: `tokens`, `ast`, `highlight`, `check`; `--format`,
+- [x] **T6.1** `cli/main.py`: `tokens`, `ast`, `highlight`, `check`; `--format`,
       `-o`, `--json`; exit codes per R7.1. Top-level guard so no traceback ever
       reaches the user.
-- [ ] **T6.2** CLI tests including empty file, comments-only file, binary garbage,
+- [x] **T6.2** CLI tests including empty file, comments-only file, binary garbage,
       nonexistent path, and a directory passed as a file. → R9.5
 - [ ] **T6.3** CI: generate highlighted HTML for the canonical fixture and publish
       to GitHub Pages. → R9.4
