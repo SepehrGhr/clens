@@ -176,9 +176,16 @@ into every name in it.
 - [x] **P7.1** `web/renderer.py` — an interactive HTML renderer emitting
       `data-*` attributes per token span. **Separate from `render/html.py`**, which
       stays frozen and JS-free. → S8.3
-- [ ] **P7.2** `web/server.py` — stdlib `http.server`, JSON endpoints
+- [x] **P7.2** `web/server.py` — stdlib `http.server`, JSON endpoints
       `/api/analyze`, `/api/complete`, `/api/hover`. Thin adapters over
       `core/queries.py`. → D22, D23
+      Extracted `scope_to_dict`/`symbol_to_dict` from `cli/main.py` into
+      `languages/c/queries.py` (public) so the CLI's `symbols --json` and the
+      web UI's symbol panel share one shaping function instead of two adapters
+      re-deriving the same JSON tree. `dispatch_post(path, raw_bytes)` is the
+      whole POST routing decision as a pure function — every case (unknown
+      route, malformed JSON, non-object body, a handler that raises) is
+      testable with no socket at all.
 - [ ] **P7.3** `web/static/index.html` + `app.js` + `style.css` — side-by-side
       editor and rendered pane, debounced re-analysis.
 - [ ] **P7.4** Panels: diagnostics list (click to jump), symbol tree, hover card.

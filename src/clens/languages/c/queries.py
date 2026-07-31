@@ -36,6 +36,8 @@ __all__ = [
     "completions_at",
     "diagnostics_of",
     "hover_at",
+    "scope_to_dict",
+    "symbol_to_dict",
     "symbols_of",
 ]
 
@@ -83,6 +85,30 @@ class HoverInfo:
 def symbols_of(model: SemanticModel) -> list[Symbol]:
     """Every symbol in the model, flattened from the by-name index."""
     return [symbol for symbols in model.symbols_by_name.values() for symbol in symbols]
+
+
+def scope_to_dict(scope: Scope) -> dict:
+    """The scope tree as a JSON-shaped dict, recursively — the CLI's
+    `clens symbols --json` and the web UI's symbol tree panel are the same
+    shape, so both adapters share this rather than each re-deriving it.
+    """
+    return {
+        "kind": scope.kind.value,
+        "symbols": [symbol_to_dict(s) for s in scope.symbols.values()],
+        "children": [scope_to_dict(c) for c in scope.children],
+    }
+
+
+def symbol_to_dict(symbol: Symbol) -> dict:
+    return {
+        "name": symbol.name,
+        "kind": symbol.kind.value,
+        "type": str(symbol.type),
+        "line": symbol.definition_loc.line,
+        "column": symbol.definition_loc.column,
+        "is_used": symbol.is_used,
+        "is_initialized": symbol.is_initialized,
+    }
 
 
 def diagnostics_of(model: SemanticModel) -> list[Diagnostic]:
