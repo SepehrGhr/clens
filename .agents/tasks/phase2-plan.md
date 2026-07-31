@@ -82,7 +82,7 @@ into every name in it.
       (row 8), shadowing warning (row 11). → S3.1, S3.2
 - [x] **P3.5** Prototype-then-definition must not fire duplicate-declaration;
       mismatched signatures between them must. Test both.
-- [ ] **P3.6** Tests: forward reference, mutual recursion, shadowing at three
+- [x] **P3.6** Tests: forward reference, mutual recursion, shadowing at three
       depths, redeclaration in the same scope vs an inner one, `ErrorStmt` regions
       skipped silently.
 

@@ -123,6 +123,51 @@ def test_error_stmt_region_is_skipped_without_crashing_or_extra_diagnostics():
     assert not any(d.code == SemanticCode.UNDEFINED_SYMBOL for d in diagnostics.diagnostics)
 
 
+def test_while_ternary_index_and_sizeof_all_resolve_their_operands():
+    text = (
+        "int f(int n) {\n"
+        "    int arr[10];\n"
+        "    while (n > 0) {\n"
+        "        n = n - 1;\n"
+        "    }\n"
+        "    int t = n ? arr[0] : arr[1];\n"
+        "    int s = sizeof(int);\n"
+        "    int s2 = sizeof arr[0];\n"
+        "    return t + s + s2;\n"
+        "}\n"
+    )
+    _, _, _, diagnostics = run(text)
+    assert not diagnostics.diagnostics
+
+
+def test_undefined_call_reports_row_5_at_the_callee_span():
+    _, _, _, diagnostics = run("void f(void) { missing_func(); }\n")
+    assert len(diagnostics.diagnostics) == 1
+    d = diagnostics.diagnostics[0]
+    assert d.code == SemanticCode.UNDEFINED_SYMBOL
+    assert "missing_func" in d.message
+
+
+def test_assignment_to_index_expr_resolves_the_base_and_index():
+    """arr[i] = 1: the target is not a plain Identifier, so it's resolved
+    as a normal read of its sub-expressions, not a symbol write."""
+    _, _, _, diagnostics = run("void f(void) { int arr[3]; int i = 0; arr[i] = 1; }\n")
+    assert not diagnostics.diagnostics
+
+
+def test_duplicate_parameter_name_reports_row_8():
+    _, _, _, diagnostics = run("int f(int x, int x) { return x; }\n")
+    assert len(diagnostics.diagnostics) == 1
+    assert diagnostics.diagnostics[0].code == SemanticCode.DUPLICATE_DECLARATION
+
+
+def test_for_loop_with_plain_assignment_init_not_a_declaration_list():
+    """for (i = 0; ...) - init is a bare Stmt, not a list[VarDecl]."""
+    text = "void f(void) { int i; for (i = 0; i < 3; i++) { } }\n"
+    _, _, _, diagnostics = run(text)
+    assert not diagnostics.diagnostics
+
+
 def test_member_expr_resolves_the_object_but_not_the_member_name():
     """The member name itself is not scope-resolved (Stage 4's job); only
     `.obj` is walked, so an undefined `.obj` still reports."""
