@@ -109,3 +109,22 @@ def test_statement_span_covers_whole_construct():
     stmt, _ = parse_stmt("return 1;")
     assert stmt.span.start_offset == 0
     assert stmt.span.end_offset == len("return 1;")
+
+
+def test_preproc_directive_inside_a_block_is_skipped():
+    """R1.2/subset — PREPROC is tokenized only, never expanded; a stray
+    directive inside a block must not confuse the parser."""
+    block, diags = parse_stmt("{\n#define MAX 10\nint x = 1;\n}")
+    assert not diags.diagnostics
+    assert len(block.body) == 1
+    assert block.body[0].name == "x"
+
+
+def test_unsupported_keyword_as_a_statement_is_reported_and_recovered():
+    """The unsupported-construct check applies inside statement position
+    too, not just at the top level (see test_parser_recovery.py for the
+    top-level/external_decl case). Uses 'goto' (no braces of its own) so
+    the recovery trace stays simple: synchronize() just skips to the ';'."""
+    block, diags = parse_stmt("{ goto end; return 1; }")
+    assert any("unsupported construct" in d.message and "goto" in d.message for d in diags.errors)
+    assert any(isinstance(item, ast.ReturnStmt) for item in block.body)

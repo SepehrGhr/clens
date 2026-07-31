@@ -69,3 +69,19 @@ def test_line_text_out_of_range_raises():
         src.line_text(0)
     with pytest.raises(ValueError):
         src.line_text(2)
+
+
+def test_line_col_to_offset_invalid_line_raises():
+    src = SourceFile("int x;\nint y;\n", "a.c")
+    with pytest.raises(ValueError, match="line 0"):
+        src.line_col_to_offset(0, 1)
+    with pytest.raises(ValueError, match="line 99"):
+        src.line_col_to_offset(99, 1)
+
+
+def test_line_col_to_offset_invalid_column_raises():
+    src = SourceFile("int x;\nint y;\n", "a.c")
+    with pytest.raises(ValueError, match="column"):
+        src.line_col_to_offset(1, 0)
+    with pytest.raises(ValueError, match="column"):
+        src.line_col_to_offset(1, 999)

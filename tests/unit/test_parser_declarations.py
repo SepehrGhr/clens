@@ -86,6 +86,17 @@ def test_array_declarator_with_and_without_size():
     assert b.array is True and b.array_size is None
 
 
+def test_array_parameter_with_and_without_size():
+    """'int a[10]' and 'int a[]' are also valid in a parameter list
+    (project/03-c-subset.md), not just in a variable declaration."""
+    program, diagnostics = parse_program("void f(int a[10], int b[]) {}")
+    assert not diagnostics.diagnostics
+    (decl,) = program.declarations
+    sized, unsized = decl.params
+    assert sized.array is True and sized.array_size.value == 10
+    assert unsized.array is True and unsized.array_size is None
+
+
 def test_multiple_declarators_share_type_no_wrapper_node():
     """int a = 1, b, c = 3; -> three sibling VarDecl nodes."""
     program, diagnostics = parse_program("int a = 1, b, c = 3;")
