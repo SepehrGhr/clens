@@ -183,6 +183,8 @@ tree on the right:
 | [`docs/testing.md`](docs/testing.md) | Copy-pasteable instructions to set up, run, and reproduce every test |
 | [`docs/team.md`](docs/team.md) | Module ownership split |
 | [`docs/third-party.md`](docs/third-party.md) | pycparser, credited as a design reference |
+| [`docs/bonus/README.md`](docs/bonus/README.md) | Index of every delivered bonus feature, with a four-section writeup each |
+| [`docs/future-work.md`](docs/future-work.md) | Deferred items — what, why, effort, and where each plugs in |
 | [`.agents/`](.agents/) | The full agent working environment this project was built from: requirements, decisions, skills |
 
 ## Development

@@ -124,14 +124,14 @@ structure in it.
 
 → `skills/bonus-docs`. → A9, A10, D29, D30
 
-- [ ] **Q6.1** `docs/bonus/README.md` — index and status table.
-- [ ] **Q6.2** Retroactive: `docker.md`, `ci-cd.md`.
-- [ ] **Q6.3** Retroactive: `test-suite-coverage.md`, `web-ui.md`.
-- [ ] **Q6.4** `reaching-definitions.md` if not already written in Q2.7.
-- [ ] **Q6.5** `docs/future-work.md` — dominator trees, dominance frontier + SSA,
+- [x] **Q6.1** `docs/bonus/README.md` — index and status table.
+- [x] **Q6.2** Retroactive: `docker.md`, `ci-cd.md`.
+- [x] **Q6.3** Retroactive: `test-suite-coverage.md`, `web-ui.md`.
+- [x] **Q6.4** `reaching-definitions.md` if not already written in Q2.7.
+- [x] **Q6.5** `docs/future-work.md` — dominator trees, dominance frontier + SSA,
       Java, LSP, incremental re-parsing, preprocessor, multi-file. Each with scope,
       effort, and plug-in point. → D30
-- [ ] **Q6.6** Link `docs/bonus/` and `docs/future-work.md` from the README.
+- [x] **Q6.6** Link `docs/bonus/` and `docs/future-work.md` from the README.
 
 ## Stage 7 — Docs and gate (≈5 commits)
 
