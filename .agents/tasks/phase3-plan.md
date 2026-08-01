@@ -67,16 +67,16 @@ structure in it.
 
 → `skills/call-graph`.
 
-- [ ] **Q3.1** `core/graph.py`: a small directed-graph type with adjacency and
+- [x] **Q3.1** `core/graph.py`: a small directed-graph type with adjacency and
       reverse adjacency, plus BFS/DFS reachability. Language-agnostic and reused by
       the CFG renderer.
-- [ ] **Q3.2** `languages/c/call_graph.py`: nodes from `FuncDecl`s, edges from
+- [x] **Q3.2** `languages/c/call_graph.py`: nodes from `FuncDecl`s, edges from
       resolved `CallExpr` sites via the symbol table. → A3.1–A3.3
-- [ ] **Q3.3** Queries 1–4: direct callees, direct callers, transitive callees,
+- [x] **Q3.3** Queries 1–4: direct callees, direct callers, transitive callees,
       transitive callers. → A3.5
-- [ ] **Q3.4** Queries 5–7: recursion detection (DFS colour marking), dead functions
+- [x] **Q3.4** Queries 5–7: recursion detection (DFS colour marking), dead functions
       (unreachable from `main`), **SCC via Tarjan**. → A3.5
-- [ ] **Q3.5** `clens callgraph <file>` with `--json`. Test against a fixture with
+- [x] **Q3.5** `clens callgraph <file>` with `--json`. Test against a fixture with
       direct recursion, mutual recursion, a dead function, and a 3-cycle. → A7.2
 
 ## Stage 4 — Navigation, rename, dead code (≈8 commits)
