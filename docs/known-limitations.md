@@ -104,27 +104,37 @@ class/namespace. This C subset has no such operator — it isn't in
 context detector has three real contexts (member, general, argument-list)
 plus the comment/string suppression case, not four.
 
-### S6.3 rows 12 and 13 are block-local approximations
+### S6.3 rows 12 and 13
 
-Proper use-before-initialization needs Phase 3's control-flow graph and
-definite-assignment analysis; proper unused-variable analysis needs
-liveness. Both are out of scope for Phase 2 (`project/04-future-phases.md`),
-so `languages/c/usage.py` does the cheap version instead:
+Row 13 needs no control-flow information: `Symbol.is_used` is set only by a
+read reference, so "no reads anywhere" is already exact without a CFG.
+Row 12 did need one, and now has it (Phase 3, A2.1):
 
-- **Row 12** (`S008`, warning): a read of a scalar-primitive local with no
-  *prior* write in `Symbol.references`' recorded order — order that
-  matches source order for straight-line code, but is built by a single
-  top-to-bottom walk with no notion of which branch of an `if` actually
-  executes. This is precisely what it misses, using the course document's
-  own example: `if (c) { x = 42; } printf(x);` — the write inside the `if`
-  is recorded *before* the read regardless of whether `c` is ever true at
-  runtime, so this crude version does not warn on that read even though a
-  real definite-assignment analysis would (`c == 0` reaches `printf(x)`
-  with `x` genuinely uninitialized). Scoped to scalar primitives only:
-  pointers, arrays, and structs are routinely "initialized" without a
-  plain identifier write (`p = &n;` doesn't write `p`; `p.x = 1;` doesn't
-  write the whole struct `p`), so checking them produced diagnostics the
-  crude approximation was never meant to produce — confirmed against
+- **Row 12** (`S008`, warning): a real forward must-analysis
+  (`languages/c/analyses.definite_assignment`) over the function's CFG,
+  configured through the one generic worklist solver
+  (`core/dataflow.py`, D26) — direction forward, lattice `(2^Vars,
+  superset)`, transfer `out = in | defs(b)`, join intersection. A read
+  warns exactly when the variable is not definitely assigned on *every*
+  path from ENTRY to that point. This replaces Phase 2's block-local
+  approximation (a single top-to-bottom walk of `Symbol.references` with
+  no notion of which branch of an `if` actually ran), which is precisely
+  what missed the course document's own example: `if (c) { x = 42; }
+  printf(x);` — the write inside the `if` was recorded *before* the read
+  regardless of whether `c` was ever true at runtime, so the old version
+  never warned there. The real analysis does, on exactly the `c == 0`
+  path where `x` is genuinely uninitialized (see
+  `tests/unit/test_analyses.py`'s golden case and
+  `.agents/fixtures/analysis/definite_assignment.c`).
+
+  Still scoped to scalar primitives (`char`/`int`/`float`/`double`) only —
+  that restriction is independent of the crude-vs-real distinction above
+  and is kept deliberately: pointers, arrays, and structs are routinely
+  "initialized" without a plain identifier write (`p = &n;` doesn't write
+  `p`; `p.x = 1;` doesn't write the whole struct `p`), so a single
+  `Reference.is_write` never captures initialization for a composite type
+  the way it does for `int x; x = 1;`. Checking them would produce
+  diagnostics this row was never meant to produce — confirmed against
   `member_errors.c`, which declares `struct Point p;` / `struct Point *q;`
   with no initializer specifically to exercise member-access errors, not
   this row.
