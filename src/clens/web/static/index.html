@@ -37,10 +37,49 @@
   </aside>
 </main>
 
+<section class="analysis">
+  <div class="analysis-tabs" role="tablist">
+    <button class="analysis-tab active" data-tab="cfg" type="button">Control Flow Graph</button>
+    <button class="analysis-tab" data-tab="callgraph" type="button">Call Graph</button>
+    <button class="analysis-tab" data-tab="deadcode" type="button">Dead Code</button>
+  </div>
+
+  <div id="analysis-cfg" class="analysis-panel">
+    <div class="analysis-toolbar">
+      <label for="function-picker">Function:</label>
+      <select id="function-picker"></select>
+    </div>
+    <div id="cfg-graph" class="graph-pane"></div>
+  </div>
+
+  <div id="analysis-callgraph" class="analysis-panel hidden">
+    <div id="callgraph-graph" class="graph-pane"></div>
+    <div class="callgraph-info">
+      <div>
+        <h3>Dead functions</h3>
+        <ul id="dead-functions-list" class="plain-list"></ul>
+      </div>
+      <div>
+        <h3>Recursive functions</h3>
+        <ul id="recursive-functions-list" class="plain-list"></ul>
+      </div>
+      <div>
+        <h3 id="callers-heading">Callers</h3>
+        <ul id="callers-list" class="plain-list"></ul>
+      </div>
+    </div>
+  </div>
+
+  <div id="analysis-deadcode" class="analysis-panel hidden">
+    <ul id="dead-code-list" class="diagnostics-list"></ul>
+  </div>
+</section>
+
 <p class="hint">
   Type <code>.</code> or <code>-&gt;</code> for member completion, or press
   <kbd>Ctrl+Space</kbd> anywhere. Click a token in the highlighted pane for
-  hover info; click a diagnostic to jump to it.
+  hover info; click a diagnostic to jump to it. Click a function node in the
+  call graph to jump to its definition and see its callers.
 </p>
 
 <script src="/static/app.js"></script>

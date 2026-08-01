@@ -115,10 +115,10 @@ structure in it.
 - [x] **Q5.4** Web endpoints `/api/cfg` and `/api/callgraph`, following the existing
       `handle_*` + `_POST_ROUTES` + `dispatch_post` pattern exactly. Tested via
       `dispatch_post`, no socket. → A7.3
-- [ ] **Q5.5** Web UI panels: a function picker driving a CFG pane, a call-graph
+- [x] **Q5.5** Web UI panels: a function picker driving a CFG pane, a call-graph
       pane, and a dead-code panel. Click a symbol → go to definition; a
       references list in the sidebar.
-- [ ] **Q5.6** Screenshots of the CFG and call-graph panes into `docs/images/`.
+- [x] **Q5.6** Screenshots of the CFG and call-graph panes into `docs/images/`.
 
 ## Stage 6 — Bonus and future-work documentation (≈6 commits)
 
