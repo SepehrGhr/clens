@@ -143,6 +143,7 @@ def test_handle_callgraph_returns_svg_and_dead_and_recursive_functions():
     assert result["svg"].startswith("<svg")
     assert result["deadFunctions"] == ["helper"]
     assert result["recursiveFunctions"] == ["f"]
+    assert {"caller": "main", "callee": "f"} in result["edges"]
 
 
 def test_handle_callgraph_empty_source_does_not_crash():

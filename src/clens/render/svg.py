@@ -75,7 +75,7 @@ def _render_node(node: LayoutNode, is_entry_exit: bool) -> str:
         for i, line in enumerate(lines)
     )
     return (
-        "<g>"
+        f'<g id="node-{escape(node.id)}">'
         f'<rect x="{x:.1f}" y="{y:.1f}" width="{_NODE_WIDTH:.0f}" height="{_NODE_HEIGHT:.0f}" '
         f'rx="8" fill="{_NODE_FILL}" stroke="{border}" stroke-width="2" />'
         f'<text text-anchor="middle" font-size="11" fill="{_TEXT_COLOR}">{tspans}</text>'

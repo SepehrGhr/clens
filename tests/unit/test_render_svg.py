@@ -24,6 +24,18 @@ def test_render_svg_is_well_formed_and_self_contained():
     assert "n &lt;= 1" in svg  # escaped, not raw `<`
 
 
+def test_render_svg_tags_each_node_group_with_its_id_for_click_to_navigate():
+    layout = layered_layout(
+        node_ids=["main", "helper"],
+        labels={},
+        edges=[("main", "helper", "")],
+        root="main",
+    )
+    svg = render_svg(layout)
+    assert 'id="node-main"' in svg
+    assert 'id="node-helper"' in svg
+
+
 def test_render_svg_uses_theme_colors_not_hardcoded_ones():
     layout = layered_layout(
         node_ids=["a", "b"],

@@ -136,13 +136,18 @@ def handle_cfg(body: dict[str, Any]) -> dict[str, Any]:
 
 
 def handle_callgraph(body: dict[str, Any]) -> dict[str, Any]:
-    """`{source}` -> `{svg, deadFunctions, recursiveFunctions}`."""
+    """`{source}` -> `{svg, edges, deadFunctions, recursiveFunctions}`.
+    `edges` (plain `{caller, callee}` name pairs) lets the front end answer
+    "who calls this function" for the click-to-navigate panel without a
+    second request.
+    """
     text = body.get("source", "")
     _source, _diagnostics, _tokens, _program, model = _build_model(text)
     call_graph = build_call_graph(model)
     svg = render_svg(call_graph_layout(call_graph))
     return {
         "svg": svg,
+        "edges": [{"caller": e.caller, "callee": e.callee} for e in call_graph.edges],
         "deadFunctions": sorted(dead_functions(call_graph)),
         "recursiveFunctions": sorted(recursive_functions(call_graph)),
     }
