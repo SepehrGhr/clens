@@ -37,9 +37,10 @@ def test_analyze_program_never_raises_on_an_empty_file():
     assert analysis.dataflow == {}
 
 
-def test_analyze_program_call_graph_still_a_placeholder():
-    analysis = _analyze("int f(void) { return 1; }\n")
-    assert analysis.call_graph is None
+def test_analyze_program_builds_the_call_graph():
+    analysis = _analyze("int g(void) { return 1; }\nint f(void) { return g(); }\n")
+    assert analysis.call_graph.graph.nodes == {"f", "g"}
+    assert analysis.call_graph.graph.successors("f") == {"g"}
 
 
 def test_analyze_program_builds_dataflow_results_per_function():

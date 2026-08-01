@@ -3,9 +3,6 @@
 results all cost something to build; a `SemanticModel` consumer that never
 asks for Phase 3 analysis (completion, hover, `clens check`) should never
 pay for it.
-
-`call_graph` is still a placeholder, typed and filled in when Stage 3
-lands.
 """
 
 from __future__ import annotations
@@ -15,6 +12,7 @@ from typing import TYPE_CHECKING
 
 from clens.languages.c.analyses import DataFlowResults, analyze_function, collect_local_symbols
 from clens.languages.c.ast_nodes import FuncDecl
+from clens.languages.c.call_graph import CallGraph, build_call_graph
 from clens.languages.c.cfg_builder import build_cfg
 
 if TYPE_CHECKING:
@@ -33,7 +31,7 @@ class ProgramAnalysis:
 
     model: SemanticModel
     cfgs: dict[str, ControlFlowGraph] = field(default_factory=dict)
-    call_graph: object = None
+    call_graph: CallGraph = field(default_factory=CallGraph)
     dataflow: dict[str, DataFlowResults] = field(default_factory=dict)
 
 
@@ -51,4 +49,5 @@ def analyze_program(model: SemanticModel) -> ProgramAnalysis:
                 cfgs[decl.name] = cfg
                 symbols = collect_local_symbols(model, decl)
                 dataflow[decl.name] = analyze_function(cfg, symbols)
-    return ProgramAnalysis(model=model, cfgs=cfgs, dataflow=dataflow)
+    call_graph = build_call_graph(model)
+    return ProgramAnalysis(model=model, cfgs=cfgs, call_graph=call_graph, dataflow=dataflow)
