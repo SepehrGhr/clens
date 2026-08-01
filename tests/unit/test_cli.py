@@ -401,3 +401,48 @@ def test_unexpected_internal_error_exits_2_without_traceback(monkeypatch, tmp_pa
     err = capsys.readouterr().err
     assert "internal error" in err
     assert "Traceback" not in err
+
+
+# --- show-cfg (A1, A7.2) -----------------------------------------------------
+
+
+def test_show_cfg_command_text_matches_golden_shape(tmp_path, capsys):
+    text = (
+        "int factorial(int n) {\n    if (n <= 1) return 1;\n    return n * factorial(n - 1);\n}\n"
+    )
+    path = write(tmp_path, "a.c", text)
+    code = main(["show-cfg", path, "factorial"])
+    out = capsys.readouterr().out
+    assert code == 0
+    assert "ENTRY" in out
+    assert "B1: n <= 1" in out
+    assert "--true--> B2" in out
+    assert "--false--> B3" in out
+    assert "B2: return 1" in out
+    assert "B3: return n * factorial(n - 1)" in out
+    assert out.count("-> EXIT") == 2
+
+
+def test_show_cfg_command_json(tmp_path, capsys):
+    text = "int f(void) { return 1; }\n"
+    path = write(tmp_path, "a.c", text)
+    code = main(["show-cfg", path, "f", "--json"])
+    payload = json.loads(capsys.readouterr().out)
+    assert code == 0
+    assert payload["function"] == "f"
+    ids = [b["id"] for b in payload["blocks"]]
+    assert ids == ["ENTRY", "B1", "EXIT"]
+
+
+def test_show_cfg_command_unknown_function_reports_error_not_crash(tmp_path, capsys):
+    path = write(tmp_path, "a.c", "int f(void) { return 1; }\n")
+    code = main(["show-cfg", path, "does_not_exist"])
+    assert code == 1
+    assert "does_not_exist" in capsys.readouterr().out
+
+
+def test_show_cfg_command_prototype_has_no_graph(tmp_path, capsys):
+    path = write(tmp_path, "a.c", "int f(int n);\n")
+    code = main(["show-cfg", path, "f"])
+    assert code == 1
+    assert "no body" in capsys.readouterr().out

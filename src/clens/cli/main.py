@@ -20,10 +20,13 @@ from pathlib import Path
 
 from clens.core.ast_nodes import Node
 from clens.core.ast_printer import format_ast
+from clens.core.cfg import BlockKind, ControlFlowGraph
 from clens.core.diagnostics import Diagnostic, DiagnosticCollector, Position, Severity
 from clens.core.scopes import Scope
 from clens.core.source import SourceFile
 from clens.core.token import Span, Token, iter_significant
+from clens.languages.c.ast_nodes import FuncDecl
+from clens.languages.c.cfg_builder import build_cfg, describe_node, render_cfg_text
 from clens.languages.c.highlighter import highlight as highlight_program
 from clens.languages.c.lexer import tokenize
 from clens.languages.c.parser import Parser
@@ -73,6 +76,10 @@ def build_parser() -> argparse.ArgumentParser:
     hover_parser = subparsers.add_parser("hover", help="hover info at a cursor")
     _add_common_arguments(hover_parser)
     _add_position_arguments(hover_parser)
+
+    show_cfg_parser = subparsers.add_parser("show-cfg", help="show a function's control flow graph")
+    _add_common_arguments(show_cfg_parser)
+    show_cfg_parser.add_argument("function", help="name of the function to graph")
 
     serve_parser = subparsers.add_parser("serve", help="start the interactive web UI")
     serve_parser.add_argument("--port", type=int, default=8000, help="port to listen on")
@@ -350,6 +357,44 @@ def _position_result_to_jsonable(result: list[CompletionItem] | HoverInfo | None
     }
 
 
+def _cmd_show_cfg(source: SourceFile, args: argparse.Namespace) -> tuple[str, DiagnosticCollector]:
+    diagnostics = DiagnosticCollector()
+    _, program = _tokenize_and_parse(source, diagnostics)
+    func = next(
+        (d for d in program.declarations if isinstance(d, FuncDecl) and d.name == args.function),
+        None,
+    )
+    if func is None:
+        diagnostics.add(_file_error(args.file, f"no such function: {args.function}"))
+        return _position_error_output(diagnostics, args), diagnostics
+    cfg = build_cfg(func)
+    if cfg is None:
+        diagnostics.add(_file_error(args.file, f"{args.function} has no body (a prototype)"))
+        return _position_error_output(diagnostics, args), diagnostics
+    if args.json:
+        return json.dumps(_cfg_to_dict(cfg), indent=2), diagnostics
+    return render_cfg_text(cfg), diagnostics
+
+
+def _cfg_to_dict(cfg: ControlFlowGraph) -> dict:
+    normals = sorted((b for b in cfg.blocks if b.kind is BlockKind.NORMAL), key=lambda b: b.id)
+    ordered = [cfg.entry, *normals, cfg.exit]
+    return {
+        "function": cfg.function_name,
+        "blocks": [
+            {
+                "id": block.label(),
+                "statements": [describe_node(s) for s in block.statements],
+                "successors": [
+                    {"target": target.label(), "label": label.value}
+                    for target, label in block.successors
+                ],
+            }
+            for block in ordered
+        ],
+    }
+
+
 def _cmd_serve(args: argparse.Namespace) -> int:
     """`serve` has no `file` argument, so it bypasses `_COMMANDS` and
     `_load_source` entirely (handled in `_run`) — it starts the web UI
@@ -367,6 +412,7 @@ _COMMANDS = {
     "symbols": _cmd_symbols,
     "complete": _cmd_complete,
     "hover": _cmd_hover,
+    "show-cfg": _cmd_show_cfg,
 }
 
 
