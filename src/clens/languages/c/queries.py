@@ -21,7 +21,7 @@ from typing import TYPE_CHECKING
 
 from clens.core.scopes import Scope, ScopeKind, scope_at, symbols_visible_at
 from clens.core.symbols import Symbol, SymbolKind
-from clens.core.token import Token, TokenType
+from clens.core.token import Span, Token, TokenType
 from clens.core.types import PointerType, StructType, Type
 from clens.core.visitor import walk
 from clens.languages.c.keywords import KEYWORDS
@@ -32,10 +32,18 @@ if TYPE_CHECKING:
 
 __all__ = [
     "CompletionItem",
+    "DefinitionInfo",
     "HoverInfo",
+    "ReferenceInfo",
     "completions_at",
+    "definition_info_to_dict",
     "diagnostics_of",
+    "find_references",
+    "find_references_by_name",
+    "find_references_to_dict",
+    "goto_definition_at",
     "hover_at",
+    "references_at",
     "scope_to_dict",
     "symbol_to_dict",
     "symbols_of",
@@ -422,6 +430,157 @@ def _scope_description(scope: Scope) -> str:
         parent = parent.parent
     name = getattr(parent, "owner", None) and getattr(parent.owner, "name", None)
     return f"function '{name}'" if name else "block scope"
+
+
+# --- Navigation (A4.1-A4.4) --------------------------------------------------
+#
+# Phase 2 already populated Symbol.definition_loc and Symbol.references
+# during resolution exactly so these would be lookups, not analyses: if
+# this section ever starts walking the AST, that is a sign of re-deriving
+# data that already exists.
+
+
+@dataclass(slots=True, frozen=True)
+class DefinitionInfo:
+    """A4.1's result: which symbol the cursor was on, and where it was
+    declared."""
+
+    symbol: Symbol
+    location: Span
+
+
+@dataclass(slots=True, frozen=True)
+class ReferenceInfo:
+    """One entry in a `find_references` result. Same shape as `Reference`
+    plus `is_definition`, since the declaration site is folded into the
+    same list rather than returned separately (A4.2)."""
+
+    span: Span
+    is_read: bool
+    is_write: bool
+    is_definition: bool
+
+
+def _symbol_at(model: SemanticModel, offset: int) -> Symbol | None:
+    """The `Symbol` the identifier at `offset` refers to, whether a plain
+    name or the right-hand side of `.`/`->`. Shared by `goto_definition_at`
+    and `references_at` so both resolve a cursor position identically.
+    """
+    token = _identifier_token_at(model.tokens, offset)
+    if token is None:
+        return None
+    preceding = _last_significant_before(model.tokens, token.start_offset)
+    if preceding is not None and _is_member_operator(preceding):
+        return _member_symbol_at(model, preceding, token)
+    scope = scope_at(model.global_scope, offset)
+    return scope.lookup(token.lexeme)
+
+
+def _member_symbol_at(model: SemanticModel, dot_token: Token, field_token: Token) -> Symbol | None:
+    target = _resolve_member_base(model, dot_token)
+    if not isinstance(target, StructType):
+        return None
+    struct_scope = _struct_scope(model, target)
+    if struct_scope is None:
+        return None
+    return struct_scope.lookup_local(field_token.lexeme)
+
+
+def goto_definition_at(model: SemanticModel, offset: int) -> DefinitionInfo | None:
+    """A4.1: the exact location of the declaration of whatever is at
+    `offset` -- a variable, parameter, function, struct tag, or field.
+    Cursor already on the declaration itself resolves to that same
+    declaration, not `None`: scope lookup does not distinguish "this is
+    the defining occurrence" from any other occurrence of the name.
+    """
+    symbol = _symbol_at(model, offset)
+    if symbol is None:
+        return None
+    return DefinitionInfo(symbol=symbol, location=symbol.definition_loc)
+
+
+def find_references(model: SemanticModel, symbol: Symbol) -> list[ReferenceInfo]:
+    """A4.2: `symbol.references` plus the definition site itself (flagged,
+    per the skill -- a references list that omits the declaration looks
+    incomplete), sorted by offset since insertion order is resolution
+    order, which is close but not guaranteed identical.
+    """
+    definition = ReferenceInfo(
+        span=symbol.definition_loc, is_read=False, is_write=False, is_definition=True
+    )
+    others = [
+        ReferenceInfo(span=r.span, is_read=r.is_read, is_write=r.is_write, is_definition=False)
+        for r in symbol.references
+    ]
+    combined = [definition, *others]
+    combined.sort(key=lambda r: r.span.start_offset)
+    return combined
+
+
+def references_at(model: SemanticModel, offset: int) -> list[ReferenceInfo] | None:
+    """The cursor-driven form of `find_references`, for the web UI's
+    click-to-navigate and a CLI position-based lookup."""
+    symbol = _symbol_at(model, offset)
+    if symbol is None:
+        return None
+    return find_references(model, symbol)
+
+
+def find_references_by_name(
+    model: SemanticModel, name: str
+) -> list[tuple[Symbol, list[ReferenceInfo]]]:
+    """`clens find-refs` takes a **name**, per the course document's
+    example, not a cursor position. If the name is ambiguous (declared in
+    several scopes -- e.g. a local shadowing a global), every match is
+    returned rather than guessing which one was meant.
+    """
+    return [
+        (symbol, find_references(model, symbol)) for symbol in model.symbols_by_name.get(name, [])
+    ]
+
+
+def _symbol_type_str(symbol: Symbol) -> str:
+    if symbol.kind is SymbolKind.FUNCTION and symbol.signature is not None:
+        return str(symbol.signature)
+    return str(symbol.type)
+
+
+def definition_info_to_dict(model: SemanticModel, info: DefinitionInfo) -> dict:
+    return {
+        "symbol": info.symbol.name,
+        "kind": info.symbol.kind.value,
+        "type": _symbol_type_str(info.symbol),
+        "defined_at": {
+            "file": model.source.filename,
+            "line": info.location.line,
+            "col": info.location.column,
+        },
+    }
+
+
+def find_references_to_dict(
+    model: SemanticModel, symbol: Symbol, references: list[ReferenceInfo]
+) -> dict:
+    """The course document's §6.3 shape, exactly -- note the key is `col`,
+    not `column` (`Diagnostic.to_dict()` uses `column`; the two specs are
+    matched independently, never unified). The definition site is not
+    repeated inside `references`: it is already `defined_at`.
+    """
+    return {
+        "symbol": symbol.name,
+        "kind": symbol.kind.value,
+        "type": _symbol_type_str(symbol),
+        "defined_at": {
+            "file": model.source.filename,
+            "line": symbol.definition_loc.line,
+            "col": symbol.definition_loc.column,
+        },
+        "references": [
+            {"file": model.source.filename, "line": r.span.line, "col": r.span.column}
+            for r in references
+            if not r.is_definition
+        ],
+    }
 
 
 # --- doc comments (S7, R1.8) --------------------------------------------
