@@ -7,12 +7,15 @@ a hand-written lexer, a recursive-descent parser, an AST, a syntax highlighter
 that consults the AST instead of just the token stream (so it can tell a
 function call apart from a bare variable reference, which a regex-based
 highlighter cannot do), two-pass name resolution, a semantic type checker,
-an auto-completion and hover engine, and an interactive web UI.
+an auto-completion and hover engine, control-flow graphs, three data-flow
+analyses, a program-wide call graph, go-to-definition/find-all-references,
+scope-aware safe rename, dead-code detection, and an interactive web UI
+covering all of the above.
 
-This is **Phase 1 and Phase 2** of a three-phase university Compiler Design
-project. Phase 3 (CFG, call graph, safe rename, go-to-definition/find-all-
-references) is out of scope for now; see `.agents/project/04-future-phases.md`
-for the hooks already left in place for it.
+This is **Phase 1, 2, and 3** — all three phases of this university Compiler
+Design project. See `docs/architecture.md` for the full pipeline and module
+map, `docs/program-analysis.md` for the Phase 3 analysis algorithms, and
+`docs/future-work.md` for what was deliberately scoped out and why.
 
 ## Pipeline
 
@@ -23,17 +26,25 @@ SourceFile ─► Lexer ─► tokens ─► Parser ─► AST ─┬─► High
                                                  │        render/ansi.py, render/html.py,
                                                  │        web/renderer.py
                                                  │
-                                                 └─► analyze() ─► SemanticModel ─► completions_at,
-                                                     (resolution,                  hover_at
-                                                      type checking,                (languages/c/queries.py)
-                                                      usage checks)
+                                                 └─► analyze() ─► SemanticModel ─┬─► completions_at,
+                                                     (resolution,                │   hover_at, goto-def,
+                                                      type checking,             │   find-refs
+                                                      usage checks)              │   (languages/c/queries.py)
+                                                                                  │
+                                                                                  └─► analyze_program() ─► ProgramAnalysis
+                                                                                      (cfgs, call graph,   (cfgs, call_graph,
+                                                                                       data-flow)           dataflow) ─► rename,
+                                                                                                                        dead-code,
+                                                                                                                        CFG/call-graph SVG
 ```
 
 Every stage feeds one shared `DiagnosticCollector`. Nothing raises past its own
 boundary — a file with lexical, syntax, *or* semantic errors still gets
 highlighted, resolved, and type-checked for everything that *did* work. See
-`docs/architecture.md` for the full module-by-module breakdown, and
-`docs/semantic-analysis.md` / `docs/type-system.md` for the Phase 2 passes.
+`docs/architecture.md` for the full module-by-module breakdown (including the
+complete Phase 3 diagram), `docs/semantic-analysis.md` / `docs/type-system.md`
+for the Phase 2 passes, and `docs/program-analysis.md` for the CFG/data-flow/
+call-graph algorithms.
 
 ## Install
 
@@ -62,6 +73,13 @@ clens check <file.c>                                      # lexer + parser + sem
 clens symbols <file.c>                                    # the scope tree and symbol table
 clens complete <file.c> <line> <col>                       # completion list at a cursor
 clens hover <file.c> <line> <col>                          # signature, scope, doc comment
+clens goto-def <file.c> <line> <col>                       # jump to a symbol's definition
+clens find-refs <file.c> <symbol-name>                     # every reference to a symbol, by name
+clens rename <file.c> <line> <col> <new-name>              # scope-aware safe rename; prints a diff, add --apply to write
+clens show-cfg <file.c> <function>                         # a function's control flow graph
+clens show-cfg <file.c> <function> --format svg -o out.svg # ...as an SVG
+clens callgraph <file.c>                                   # the program's call graph
+clens dead-code <file.c>                                   # unreachable code, unused vars, dead assignments
 clens serve --port 8000                                    # interactive web UI at 127.0.0.1:8000
 ```
 
@@ -169,6 +187,20 @@ tree on the right:
 
 ![c-lens web UI: editor, highlighted pane, and symbol tree](docs/images/web-ui-overview.png)
 
+Three more tabs, added in Phase 3: a function's control-flow graph, the
+whole program's call graph (click a node to jump to its definition or see
+its callers), and a dead-code report — all rendered as SVG, generated by
+the same `core/graph_layout.py` + `render/svg.py` pair the CLI's
+`--format svg` uses:
+
+![Control flow graph pane](docs/images/web-ui-cfg.png)
+![Call graph pane with dead/recursive function lists](docs/images/web-ui-callgraph.png)
+![Dead code panel](docs/images/web-ui-deadcode.png)
+
+See [`docs/bonus/web-ui.md`](docs/bonus/web-ui.md) for the full writeup —
+this interface is also what satisfies the Phase 3 requirement for an
+interactive way to reach navigation/CFG/call-graph features.
+
 ## Documentation
 
 | Doc | Contents |
@@ -179,7 +211,8 @@ tree on the right:
 | [`docs/lexical-specification.md`](docs/lexical-specification.md) | Formal regexes per token class, the NFA→DFA→minimization theory, a worked example |
 | [`docs/semantic-analysis.md`](docs/semantic-analysis.md) | The scope model, the two-pass resolution algorithm, the symbol table, worked example |
 | [`docs/type-system.md`](docs/type-system.md) | The `Type` hierarchy, conversion rules, per-node typing table, `UnknownType`/no-cascade |
-| [`docs/known-limitations.md`](docs/known-limitations.md) | Every excluded C feature and every Phase 2 approximation, with its reason |
+| [`docs/program-analysis.md`](docs/program-analysis.md) | CFG construction, the three data-flow analyses (direction/lattice/transfer/join), call-graph queries |
+| [`docs/known-limitations.md`](docs/known-limitations.md) | Every excluded feature and every approximation across all three phases, with its reason |
 | [`docs/testing.md`](docs/testing.md) | Copy-pasteable instructions to set up, run, and reproduce every test |
 | [`docs/team.md`](docs/team.md) | Module ownership split |
 | [`docs/third-party.md`](docs/third-party.md) | pycparser, credited as a design reference |

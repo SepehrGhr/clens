@@ -161,3 +161,42 @@ subset has no representation for (`core/types.py`'s `Type` hierarchy has no
 unsigned variant at all — D16). `SizeofExpr` always types as `int`
 (`docs/type-system.md`'s per-node table) rather than modeling a type that
 exists nowhere else in the system for the sake of one operator.
+
+## Phase 3 limitations
+
+### `throw` / exception handling — N/A
+
+The course document's Phase 3 material discusses `throw` and exception
+propagation for target languages that have them (e.g. Java, C++). This C
+subset has no exception mechanism at all — no `throw`, no `try`/`catch`,
+nothing in `languages/c/token_rules.py` or the grammar models one — so
+there is no propagation edge for the call graph or CFG to represent.
+Every function exit in this subset's CFGs is a `return` or an implicit
+fallthrough; both already flow into the single `EXIT` node
+(`docs/program-analysis.md`).
+
+### Virtual dispatch — N/A
+
+A3.4 asks the call graph to resolve virtual/polymorphic calls against a
+declared receiver type and a class hierarchy. This C subset has no
+methods, classes, or inheritance (`struct` has plain data members only,
+no member functions) — every call site names exactly one syntactically
+fixed candidate function, resolved once by Phase 2's ordinary name
+resolution. There is no "callable set" to compute beyond that single
+candidate; see `languages/c/call_graph.py`'s module docstring and
+`docs/program-analysis.md`.
+
+### Call graph and navigation are single-file
+
+`build_call_graph` (A3.1-A3.3) only sees `FuncDecl`s in the one file
+being analyzed; a call to a function declared via a prototype but
+defined in another translation unit is recorded as an `UnresolvedCall`,
+not a dead end silently dropped, but it is never connected to a real
+node since that node doesn't exist in this analysis's scope. Likewise
+go-to-definition and find-all-references (A4) operate over one
+`SemanticModel`, i.e. one file. Every navigation result's JSON already
+carries a `file` field for exactly this reason (`docs/program-analysis.md`,
+`docs/future-work.md`'s multi-file item) — the format was chosen so that
+extending to multiple files later is additive, not a breaking change,
+even though the cross-file resolution itself is out of scope for this
+project (see `docs/future-work.md`).

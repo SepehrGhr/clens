@@ -135,14 +135,14 @@ structure in it.
 
 ## Stage 7 — Docs and gate (≈5 commits)
 
-- [ ] **Q7.1** `docs/program-analysis.md` — CFG construction algorithm, the three
+- [x] **Q7.1** `docs/program-analysis.md` — CFG construction algorithm, the three
       data-flow analyses with **direction, lattice, transfer, and join stated
       explicitly for each** (A2.4), and the call-graph queries with their algorithms.
-- [ ] **Q7.2** `docs/known-limitations.md` — rewrite the row-12/13 entry (D27); add
+- [x] **Q7.2** `docs/known-limitations.md` — rewrite the row-12/13 entry (D27); add
       `throw` N/A, virtual calls N/A, single-file scope.
-- [ ] **Q7.3** `docs/architecture.md` and the README pipeline diagram updated for
+- [x] **Q7.3** `docs/architecture.md` and the README pipeline diagram updated for
       the analysis layer. Note explicitly that A7.1's interface requirement is
       satisfied by the web UI.
-- [ ] **Q7.4** `docs/testing.md` — every new command, verified copy-pasteable.
-- [ ] **Q7.5** Coverage ≥80%; walk `checklists/phase3-acceptance.md`, then re-walk
+- [x] **Q7.4** `docs/testing.md` — every new command, verified copy-pasteable.
+- [x] **Q7.5** Coverage ≥80%; walk `checklists/phase3-acceptance.md`, then re-walk
       the Phase 1 and Phase 2 checklists. Only then report Phase 3 complete.

@@ -7,7 +7,11 @@ Phase 1 ends at the highlighter. Phase 2 adds one more stage —
 that reads a type-annotated, name-resolved program: the highlighter still
 only needs the AST (highlighting predates and does not depend on semantic
 analysis), but completion, hover, and `clens check`'s semantic diagnostics
-all read `analyze()`'s output.
+all read `analyze()`'s output. Phase 3 adds one further stage —
+`languages/c/program_analysis.py::analyze_program()` — built *alongside*
+`SemanticModel`, not inside it (D25): a `SemanticModel` consumer that
+never asks for CFGs, the call graph, or data-flow results (completion,
+hover, `clens check`) never pays for building them.
 
 ```
                  ┌───────────────────────────────────────────────────────────────────────┐
@@ -30,13 +34,30 @@ SourceFile ──► Lexer ──► tokens ──► Parser ──► AST ─�
                                                        ▼
                                                 SemanticModel (scope tree, typed AST, diagnostics)
                                                        │
-                                                       ▼
-                                        languages/c/queries.py: completions_at, hover_at,
-                                        symbols_of, diagnostics_of
-                                                       │
-                                                       ▼
-                                          cli/main.py and web/server.py — thin adapters
+                                            ┌──────────┴──────────────────────────────────┐
+                                            ▼                                              ▼
+                              languages/c/queries.py: completions_at,           analyze_program(model)
+                              hover_at, symbols_of, diagnostics_of,             = build_cfg (per function)
+                              goto_definition_at, find_references              + build_call_graph
+                                            │                                  + analyze_function (dataflow)
+                                            │                                              │
+                                            │                                              ▼
+                                            │                                     ProgramAnalysis (cfgs,
+                                            │                                     call_graph, dataflow)
+                                            │                                              │
+                                            │                              ┌───────────────┼───────────────┐
+                                            │                              ▼               ▼               ▼
+                                            │                     rename.py        dead_code.py    core/graph_layout.py
+                                            │                     (safe rename)    (A6 report)      + render/svg.py
+                                            │                                                        (CFG/call-graph SVG)
+                                            └──────────────────────────────┬───────────────────────────────┘
+                                                                            ▼
+                                                       cli/main.py and web/server.py — thin adapters
 ```
+
+See `docs/program-analysis.md` for the CFG construction algorithm, each
+data-flow analysis's direction/lattice/transfer/join, and the call
+graph's seven queries.
 
 Everything produces diagnostics into one `DiagnosticCollector`, passed explicitly
 through the pipeline (never a global — see `core/diagnostics.py`). Nothing raises to
@@ -85,7 +106,7 @@ a rewrite.
 | `languages/c/semantic.py` | `SemanticModel`, `analyze()` — the Phase 2 entry point, mirroring `parse()` |
 | `languages/c/queries.py` | The one query layer (D23): `completions_at`, `hover_at`, `symbols_of`, `diagnostics_of`, plus `scope_to_dict`/`symbol_to_dict` for the CLI and web JSON shapes |
 | `web/renderer.py` | The interactive HTML renderer (`data-*` offsets, no document shell) — separate from `render/html.py`, which stays frozen and JS-free |
-| `web/server.py` | stdlib `http.server` backend: `GET /`, `GET /static/*`, `POST /api/{analyze,complete,hover}` |
+| `web/server.py` | stdlib `http.server` backend: `GET /`, `GET /static/*`, `POST /api/{analyze,complete,hover,cfg,callgraph,dead-code}` (the last three added in Phase 3) |
 | `web/static/` | `index.html`, `app.js`, `style.css` — the vanilla-JS front end (no framework, no build step) |
 
 `core/types.py`, `core/symbols.py`, and `core/scopes.py` are core (language-
@@ -98,6 +119,43 @@ core-never-imports-`languages/` rule Phase 1 established. `scope_at` and
 `symbols_visible_at` are the one exception that *does* stay in `core/`:
 they operate on a plain `Scope`, not a `SemanticModel`, so nothing about
 them is C-specific.
+
+### Phase 3 additions
+
+| Module | Responsibility |
+|---|---|
+| `core/cfg.py` | `BasicBlock`, `ControlFlowGraph`, `EdgeLabel` — language-agnostic CFG structures (A1.2-A1.4) |
+| `core/dataflow.py` | The generic worklist fixed-point solver (D26), parameterized by direction/join/transfer/boundary/initial |
+| `core/graph.py` | `DirectedGraph`: adjacency both ways, BFS reachability, Tarjan SCC — language-agnostic, reused by the CFG renderer too |
+| `core/graph_layout.py` | Pure layered-layout geometry (rank by BFS depth, center each rank, curve back-edges) — no I/O, feeds `render/svg.py` |
+| `render/svg.py` | Emits SVG from a `Layout`, using `core/theme.py` colors; serves both the CFG and call-graph panes |
+| `languages/c/cfg_builder.py` | Builds one CFG per function body (A1.1, A8.1), plus `render_cfg_text`/`cfg_layout`/`describe_node` |
+| `languages/c/analyses.py` | The three required data-flow analyses (A2.1-A2.3) plus the reaching-definitions bonus, each ~15 lines of configuration over `core/dataflow.py` |
+| `languages/c/call_graph.py` | `build_call_graph` (A3.1-A3.3) and the seven A3.5 queries, layered over `core/graph.py` |
+| `languages/c/program_analysis.py` | `ProgramAnalysis`/`analyze_program()` (D25) — the Phase 3 sibling of `SemanticModel`, built only on demand |
+| `languages/c/queries.py` (extended) | `goto_definition_at`, `find_references`, `find_references_by_name` (A4), following the §6.3 JSON shape exactly |
+| `languages/c/rename.py` | Scope-aware safe rename (A5): conflict/shadow checks against the scope tree, unified diff, atomic apply |
+| `languages/c/dead_code.py` | `find_dead_code` — all five A6 categories, combining CFG, call graph, and liveness results |
+
+`core/cfg.py`, `core/dataflow.py`, `core/graph.py`, and
+`core/graph_layout.py` stay language-agnostic for the same reason as
+every other `core/` module: `switch`/`goto`/labels are out of this C
+subset (`docs/known-limitations.md`), so every CFG built from this AST
+happens to be reducible, but nothing in `core/cfg.py` or
+`core/dataflow.py` assumes that — a second language plugs in the same
+way Phase 1/2's core modules already do.
+
+Go-to-definition and find-all-references (A4.1-A4.2) needed almost no
+new machinery — `goto_definition_at` is nearly a direct read of
+`Symbol.definition_loc`, and `find_references` is nearly a direct read of
+`Symbol.references`, both already populated by Phase 2's resolver. This
+is the payoff of building the symbol table with `references` as a first-
+class field from the start, rather than deriving it later.
+
+**A7.1/§6.6** (some interactive way to reach the Phase 3 navigation/CFG/
+call-graph features) is satisfied by the web UI described in
+`docs/bonus/web-ui.md` — stated explicitly here since there is no
+separate interface built for it.
 
 ## Why recursive descent, not a parser generator (R2.4)
 

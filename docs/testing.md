@@ -108,6 +108,25 @@ click a token in the highlighted pane for a hover card; click a row in the
 Diagnostics panel to jump the editor to it. No build step — `web/static/`
 is served as-is. See the README's "Web UI" section for screenshots.
 
+## 9d. Try the Phase 3 commands
+
+```bash
+clens goto-def tests/fixtures/valid/factorial.c 3 12                    # jump to n's declaration
+clens find-refs tests/fixtures/valid/factorial.c n                      # every reference to n, by name
+clens rename tests/fixtures/valid/factorial.c 1 19 count                # unified diff; add --apply to write it
+clens show-cfg tests/fixtures/valid/factorial.c factorial                # ENTRY/B1/B2/B3/EXIT, text form
+clens show-cfg tests/fixtures/valid/factorial.c factorial --format svg -o factorial.svg
+clens callgraph tests/fixtures/valid/factorial.c                        # text form
+clens callgraph tests/fixtures/valid/factorial.c --json                 # nodes, edges, dead/recursive functions
+clens dead-code tests/fixtures/valid/factorial.c                        # all five A6 categories
+```
+
+`goto-def`/`rename` take a 1-based `<line> <col>`, same as `complete`/
+`hover`; `find-refs` takes a symbol name directly. `rename` never writes
+without `--apply` — run it once without the flag to review the diff
+first. All eight accept `--json` where a JSON shape makes sense (not
+`show-cfg --format svg`, which already has an explicit `--format`).
+
 ## 10. Docker
 
 ```bash
@@ -135,7 +154,16 @@ docker run --rm -v "$PWD/tests/fixtures/valid:/work" clens highlight /work/facto
 | Crude use-before-init / unused-variable checks | `test_usage.py` |
 | All thirteen S6.1 diagnostic rows, one test each | `test_diagnostics_thirteen_rows.py` |
 | Completion and hover: context detection, member/general/argument completion, ranking, hover | `test_queries_context.py`, `test_queries_completion_member.py`, `test_queries_completion_general.py`, `test_queries_ranking.py`, `test_queries_hover.py` |
-| Web UI: interactive renderer, HTTP backend (handler-level, no socket, plus one live smoke test) | `test_web_renderer.py`, `test_web_server.py` |
+| **Phase 3** — CFG construction, edge cases, the §6.1 golden `factorial` CFG | `test_cfg_builder.py` |
+| Generic worklist solver (toy lattice) + the three real analyses plus reaching definitions | `test_dataflow_solver.py`, `test_analyses.py` |
+| Directed graph: adjacency, BFS reachability, Tarjan SCC | `test_graph.py` |
+| Call graph: A3.1-A3.3 construction, all seven A3.5 queries, recursion/dead-function/SCC fixtures | `test_call_graph.py` |
+| `ProgramAnalysis`/`analyze_program()` wiring | `test_program_analysis.py` |
+| Navigation: go-to-definition, find-all-references, the §6.3 JSON shape | `test_navigation.py` |
+| Safe rename: conflict/shadow checks, the A5.3 golden test, atomic apply | `test_rename.py` |
+| Dead-code detection: all five A6 categories | `test_dead_code.py` |
+| Layered graph layout (pure geometry) + SVG emission | `test_graph_layout.py`, `test_render_svg.py` |
+| Web UI (extended): `/api/cfg`, `/api/callgraph`, `/api/dead-code` handlers | `test_web_server.py` |
 
 All tests live under `tests/unit/` except the golden snapshot tests, which
 live under `tests/golden/`. `tests/fixtures/` mirrors `.agents/fixtures/` —
@@ -145,10 +173,12 @@ programs, and the course-document golden expectations.
 ## 12. Requirement traceability
 
 Every requirement ID from `.agents/project/01-phase1-requirements.md` (`R1.1`,
-`R3.4`, ...) and `.agents/project/06-phase2-requirements.md` (`S1.1`, `S4.7`,
-`S6.1`, ...) appears in at least one test's docstring or name:
+`R3.4`, ...), `.agents/project/06-phase2-requirements.md` (`S1.1`, `S4.7`,
+`S6.1`, ...), and the Phase 3 requirement set (`A1.1`-`A8.1`) appears in at
+least one test's docstring or name:
 
 ```bash
 grep -rn "R3\.4" tests/
 grep -rn "S4\.7" tests/
+grep -rn "A5\.3" tests/
 ```

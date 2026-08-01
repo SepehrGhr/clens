@@ -5,97 +5,97 @@ Walk top to bottom, then re-walk `checklists/phase1-acceptance.md` and
 
 ## Regression
 
-- [ ] Every item in the Phase 1 and Phase 2 checklists still passes
-- [ ] `clens highlight --format html` byte-identical; golden green; no JavaScript
-- [ ] Coverage still ≥ 80%
-- [ ] Zero runtime dependencies still true
+- [x] Every item in the Phase 1 and Phase 2 checklists still passes
+- [x] `clens highlight --format html` byte-identical; golden green; no JavaScript
+- [x] Coverage still ≥ 80% (96.83% as of this pass — `pytest --cov=src/clens`)
+- [x] Zero runtime dependencies still true (`pyproject.toml`'s `dependencies = []`)
 
 ## Robustness
 
-- [ ] No crash on: prototype without body, empty function body, `while(1)` with no
+- [x] No crash on: prototype without body, empty function body, `while(1)` with no
       exit, `ErrorStmt` inside a function, a file with no `main`, a file that fails
       to parse entirely, an empty file
-- [ ] Unreachable EXIT from `while(1)` is reported correctly, not "fixed"
-- [ ] `break` / `continue` with no enclosing loop does not raise
+- [x] Unreachable EXIT from `while(1)` is reported correctly, not "fixed"
+- [x] `break` / `continue` with no enclosing loop does not raise
 
 ## CFG
 
-- [ ] `factorial` golden CFG matches course document §6.1 exactly, including the
+- [x] `factorial` golden CFG matches course document §6.1 exactly, including the
       labelled true/false edges
-- [ ] `if`/`else`, `while`, `for`, `break`, `continue`, `return` each tested
-- [ ] Loop back-edges present and labelled
-- [ ] `predecessors` maintained and correct
-- [ ] One ENTRY, at least one EXIT (A1.4)
+- [x] `if`/`else`, `while`, `for`, `break`, `continue`, `return` each tested
+- [x] Loop back-edges present and labelled
+- [x] `predecessors` maintained and correct
+- [x] One ENTRY, at least one EXIT (A1.4)
 
 ## Data-flow
 
-- [ ] One generic solver; all analyses configured through it
-- [ ] Solver tested standalone on a toy lattice, both directions, both joins
-- [ ] Must-analysis initial value is the **full** set, not empty
-- [ ] Definite assignment: `int x; if (c) { x = 42; } printf(x);` warns
-- [ ] Live variables produce dead assignments
-- [ ] Unreachable blocks and post-jump statements both warn
-- [ ] Gen/kill built from `Reference.is_read`/`is_write`, not re-derived from the AST
-- [ ] `usage.py` rewired to real results; codes `S008`/`S009` and severities unchanged
-- [ ] `known-limitations.md` row-12/13 entry **rewritten**, not appended
-- [ ] Direction, lattice, transfer, and join documented for each analysis (A2.4)
+- [x] One generic solver; all analyses configured through it
+- [x] Solver tested standalone on a toy lattice, both directions, both joins
+- [x] Must-analysis initial value is the **full** set, not empty
+- [x] Definite assignment: `int x; if (c) { x = 42; } printf(x);` warns
+- [x] Live variables produce dead assignments
+- [x] Unreachable blocks and post-jump statements both warn
+- [x] Gen/kill built from `Reference.is_read`/`is_write`, not re-derived from the AST
+- [x] `usage.py` rewired to real results; codes `S008`/`S009` and severities unchanged
+- [x] `known-limitations.md` row-12/13 entry **rewritten**, not appended
+- [x] Direction, lattice, transfer, and join documented for each analysis (A2.4)
 
 ## Call graph
 
-- [ ] Nodes and edges correct, with call-site spans
-- [ ] All seven A3.5 queries implemented and individually tested
-- [ ] Tarjan SCC correct for self-loops, 2-cycles, 3-cycles
-- [ ] Recursion vs single-node-SCC distinction handled
-- [ ] No-`main` behaviour chosen, implemented, documented
+- [x] Nodes and edges correct, with call-site spans
+- [x] All seven A3.5 queries implemented and individually tested
+- [x] Tarjan SCC correct for self-loops, 2-cycles, 3-cycles
+- [x] Recursion vs single-node-SCC distinction handled
+- [x] No-`main` behaviour chosen, implemented, documented
 
 ## Navigation
 
-- [ ] Go-to-definition for variables, parameters, functions, struct tags, fields
-- [ ] Cursor on a definition returns that definition
-- [ ] References include the definition site, flagged, sorted by offset
-- [ ] JSON matches course document §6.3 exactly — including **`col`**, not `column`
-- [ ] Hover (Phase 2's S7) still works
+- [x] Go-to-definition for variables, parameters, functions, struct tags, fields
+- [x] Cursor on a definition returns that definition
+- [x] References include the definition site, flagged, sorted by offset
+- [x] JSON matches course document §6.3 exactly — including **`col`**, not `column`
+- [x] Hover (Phase 2's S7) still works
 
 ## Rename
 
-- [ ] **No string substitution anywhere in the rename path**
-- [ ] Conflict check names the conflicting declaration's location
-- [ ] Both shadow directions checked (would-shadow, would-be-shadowed)
-- [ ] Unified diff produced
-- [ ] Edits applied right-to-left, atomically
-- [ ] §6.4 golden test passes, **including the untouched second function using the
+- [x] **No string substitution anywhere in the rename path**
+- [x] Conflict check names the conflicting declaration's location
+- [x] Both shadow directions checked (would-shadow, would-be-shadowed)
+- [x] Unified diff produced
+- [x] Edits applied right-to-left, atomically
+- [x] §6.4 golden test passes, **including the untouched second function using the
       same name**
-- [ ] Refusal cases tested
+- [x] Refusal cases tested
 
 ## Dead code
 
-- [ ] All five A6 categories fire on the §6.5 fixture, each exactly once
-- [ ] Severities: unreachable and dead assignments warn; unused variables info
+- [x] All five A6 categories fire on the §6.5 fixture, each exactly once
+- [x] Severities: unreachable and dead assignments warn; unused variables info
 
 ## Interfaces
 
-- [ ] `show-cfg`, `callgraph`, `dead-code`, `goto-def`, `find-refs`, `rename` all
+- [x] `show-cfg`, `callgraph`, `dead-code`, `goto-def`, `find-refs`, `rename` all
       work, all support `--json`
-- [ ] SVG rendering for CFG and call graph, theme colors, no external references
-- [ ] Graph layout is pure and unit-tested independently of SVG output
-- [ ] Web endpoints `/api/cfg` and `/api/callgraph` follow the `handle_*` +
+- [x] SVG rendering for CFG and call graph, theme colors, no external references
+- [x] Graph layout is pure and unit-tested independently of SVG output
+- [x] Web endpoints `/api/cfg` and `/api/callgraph` follow the `handle_*` +
       `_POST_ROUTES` + `dispatch_post` pattern; tested without a socket
-- [ ] Web UI: CFG pane, call-graph pane, dead-code panel, click-to-navigate
-- [ ] A7.1 explicitly recorded as satisfied by the Web UI
+- [x] Web UI: CFG pane, call-graph pane, dead-code panel, click-to-navigate
+- [x] A7.1 explicitly recorded as satisfied by the Web UI
 
 ## Documentation
 
-- [ ] `docs/program-analysis.md` — CFG algorithm, three analyses with all four
+- [x] `docs/program-analysis.md` — CFG algorithm, three analyses with all four
       lattice properties each, call-graph queries with algorithms
-- [ ] `docs/known-limitations.md` — row-12/13 rewritten; `throw` N/A; virtual calls
+- [x] `docs/known-limitations.md` — row-12/13 rewritten; `throw` N/A; virtual calls
       N/A; single-file scope
-- [ ] `docs/architecture.md` and README pipeline updated for the analysis layer
-- [ ] `docs/testing.md` — every new command verified copy-pasteable
-- [ ] `docs/bonus/README.md` + a four-section file per delivered bonus
+- [x] `docs/architecture.md` and README pipeline updated for the analysis layer
+- [x] `docs/testing.md` — every new command verified copy-pasteable
+- [x] `docs/bonus/README.md` + a four-section file per delivered bonus
       (docker, ci-cd, test-suite-coverage, web-ui, reaching-definitions)
-- [ ] Every command in every "Seeing it work" section actually runs
-- [ ] `docs/future-work.md` — all seven deferred items with effort and plug-in points
-- [ ] Both linked from the README
+- [x] Every command in every "Seeing it work" section actually runs
+- [x] `docs/future-work.md` — all seven deferred items with effort and plug-in points
+- [x] Both linked from the README
 
 ## Defense readiness
 
