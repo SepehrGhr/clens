@@ -12,10 +12,10 @@ structure in it.
 
 ## Stage 0 — Carry-over (≈3 commits)
 
-- [ ] **Q0.1** Drop in the Phase 3 agent environment; commit it.
-- [ ] **Q0.2** Run `pytest`; walk both `checklists/phase1-acceptance.md` and
+- [x] **Q0.1** Drop in the Phase 3 agent environment; commit it.
+- [x] **Q0.2** Run `pytest`; walk both `checklists/phase1-acceptance.md` and
       `checklists/phase2-acceptance.md`. Green before any Phase 3 code.
-- [ ] **Q0.3** `languages/c/program_analysis.py` skeleton: `ProgramAnalysis` and
+- [x] **Q0.3** `languages/c/program_analysis.py` skeleton: `ProgramAnalysis` and
       `analyze_program(model) -> ProgramAnalysis` returning empty structures, wired
       into the CLI and a test. Everything else fills it in. → D25
 
@@ -23,22 +23,22 @@ structure in it.
 
 → `skills/cfg`.
 
-- [ ] **Q1.1** `core/cfg.py`: `BasicBlock` (id, statements, successors,
+- [x] **Q1.1** `core/cfg.py`: `BasicBlock` (id, statements, successors,
       predecessors, kind), `ControlFlowGraph` (entry, exit(s), blocks), and edge
       labels (`true`/`false`/`fallthrough`/`back`). Language-agnostic. → A1.2–A1.4
-- [ ] **Q1.2** `languages/c/cfg_builder.py`: straight-line statements, `Block`,
+- [x] **Q1.2** `languages/c/cfg_builder.py`: straight-line statements, `Block`,
       `ExprStmt`, `VarDecl`. → A1.1
-- [ ] **Q1.3** `if`/`else` with true/false edges; `return` terminating a block into
+- [x] **Q1.3** `if`/`else` with true/false edges; `return` terminating a block into
       EXIT.
-- [ ] **Q1.4** `while` and `for`, including the loop back-edge, and `break` /
+- [x] **Q1.4** `while` and `for`, including the loop back-edge, and `break` /
       `continue` targeting the enclosing loop's exit / header. Keep a loop-context
       stack; `break` outside a loop is already a parse-level concern, but the
       builder must not crash on a recovered AST.
-- [ ] **Q1.5** Edge cases: prototypes (no body → no CFG), empty bodies, `while(1)`
+- [x] **Q1.5** Edge cases: prototypes (no body → no CFG), empty bodies, `while(1)`
       with no exit (unreachable EXIT is correct), `ErrorStmt` regions. → A8.1
-- [ ] **Q1.6** Golden test: the `factorial` CFG matches §6.1 exactly — ENTRY, B1,
+- [x] **Q1.6** Golden test: the `factorial` CFG matches §6.1 exactly — ENTRY, B1,
       B2, B3, EXIT with the labelled true/false edges. → A1.5
-- [ ] **Q1.7** `clens show-cfg <file> <function>` — text form first (blocks,
+- [x] **Q1.7** `clens show-cfg <file> <function>` — text form first (blocks,
       statements, successors). SVG comes in Stage 5. → A7.2
 
 ## Stage 2 — Data-flow (≈7 commits)
