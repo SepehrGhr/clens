@@ -10,7 +10,12 @@ from pathlib import Path
 
 from clens.core.diagnostics import DiagnosticCollector
 from clens.core.source import SourceFile
-from clens.languages.c.call_graph import build_call_graph, dead_functions, recursive_functions
+from clens.languages.c.call_graph import (
+    build_call_graph,
+    call_graph_layout,
+    dead_functions,
+    recursive_functions,
+)
 from clens.languages.c.parser import parse
 from clens.languages.c.semantic import analyze
 
@@ -130,3 +135,11 @@ def test_leaf_is_a_singleton_scc_without_a_self_edge():
     leaf_component = next(c for c in components if c == ["leaf"])
     assert leaf_component == ["leaf"]
     assert "leaf" not in recursive_functions(cg)
+
+
+def test_call_graph_layout_ranks_from_main():
+    cg = _fixture_call_graph()
+    layout = call_graph_layout(cg)
+    assert set(layout.nodes) == cg.graph.nodes
+    assert layout.nodes["main"].rank == 0
+    assert layout.nodes["leaf"].rank > 0

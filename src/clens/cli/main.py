@@ -20,9 +20,8 @@ from pathlib import Path
 
 from clens.core.ast_nodes import Node
 from clens.core.ast_printer import format_ast
-from clens.core.cfg import BlockKind, ControlFlowGraph
+from clens.core.cfg import ControlFlowGraph
 from clens.core.diagnostics import Diagnostic, DiagnosticCollector, Position, Severity
-from clens.core.graph_layout import layered_layout
 from clens.core.scopes import Scope
 from clens.core.source import SourceFile
 from clens.core.token import Span, Token, iter_significant
@@ -30,10 +29,18 @@ from clens.languages.c.ast_nodes import FuncDecl
 from clens.languages.c.call_graph import (
     CallGraph,
     build_call_graph,
+    call_graph_layout,
     dead_functions,
     recursive_functions,
 )
-from clens.languages.c.cfg_builder import build_cfg, describe_node, render_cfg_text
+from clens.languages.c.cfg_builder import (
+    ENTRY_EXIT_LABELS,
+    build_cfg,
+    cfg_layout,
+    describe_node,
+    ordered_blocks,
+    render_cfg_text,
+)
 from clens.languages.c.dead_code import DeadCodeReport, find_dead_code
 from clens.languages.c.highlighter import highlight as highlight_program
 from clens.languages.c.lexer import tokenize
@@ -497,30 +504,13 @@ def _cmd_show_cfg(source: SourceFile, args: argparse.Namespace) -> tuple[str, Di
     if args.json:
         return json.dumps(_cfg_to_dict(cfg), indent=2), diagnostics
     if args.format == "svg":
-        svg = render_svg(_cfg_layout(cfg), highlighted_ids=frozenset({"ENTRY", "EXIT"}))
+        svg = render_svg(cfg_layout(cfg), highlighted_ids=ENTRY_EXIT_LABELS)
         return svg, diagnostics
     return render_cfg_text(cfg), diagnostics
 
 
-def _cfg_layout(cfg: ControlFlowGraph):
-    normals = sorted((b for b in cfg.blocks if b.kind is BlockKind.NORMAL), key=lambda b: b.id)
-    ordered = [cfg.entry, *normals, cfg.exit]
-    node_ids = [b.label() for b in ordered]
-    labels = {
-        b.label(): "\n".join([b.label(), *(describe_node(s) for s in b.statements)])
-        for b in ordered
-    }
-    edges = [
-        (block.label(), target.label(), label.value)
-        for block in ordered
-        for target, label in block.successors
-    ]
-    return layered_layout(node_ids, labels, edges, root=cfg.entry.label())
-
-
 def _cfg_to_dict(cfg: ControlFlowGraph) -> dict:
-    normals = sorted((b for b in cfg.blocks if b.kind is BlockKind.NORMAL), key=lambda b: b.id)
-    ordered = [cfg.entry, *normals, cfg.exit]
+    ordered = ordered_blocks(cfg)
     return {
         "function": cfg.function_name,
         "blocks": [
@@ -545,16 +535,8 @@ def _cmd_callgraph(source: SourceFile, args: argparse.Namespace) -> tuple[str, D
     if args.json:
         return json.dumps(_call_graph_to_dict(call_graph), indent=2), diagnostics
     if args.format == "svg":
-        return render_svg(_call_graph_layout(call_graph)), diagnostics
+        return render_svg(call_graph_layout(call_graph)), diagnostics
     return _render_call_graph_text(call_graph), diagnostics
-
-
-def _call_graph_layout(call_graph: CallGraph):
-    node_ids = sorted(call_graph.graph.nodes)
-    labels = {name: name for name in node_ids}
-    edges = [(e.caller, e.callee, "") for e in call_graph.edges]
-    root = "main" if call_graph.has_main else (node_ids[0] if node_ids else "")
-    return layered_layout(node_ids, labels, edges, root=root)
 
 
 def _call_graph_to_dict(call_graph: CallGraph) -> dict:

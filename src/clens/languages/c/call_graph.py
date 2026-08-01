@@ -13,6 +13,7 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
 from clens.core.graph import DirectedGraph
+from clens.core.graph_layout import Layout, layered_layout
 from clens.core.symbols import Symbol, SymbolKind
 from clens.core.token import Span
 from clens.core.visitor import walk
@@ -26,6 +27,7 @@ __all__ = [
     "CallGraph",
     "UnresolvedCall",
     "build_call_graph",
+    "call_graph_layout",
     "dead_functions",
     "recursive_functions",
 ]
@@ -169,3 +171,17 @@ def dead_functions(call_graph: CallGraph) -> set[str]:
         return set()
     alive = {"main"} | call_graph.graph.reachable_from("main")
     return call_graph.graph.nodes - alive
+
+
+def call_graph_layout(call_graph: CallGraph) -> Layout:
+    """The `Layout` for `render/svg.py`, shared by `clens callgraph
+    --format svg` and the web UI's `/api/callgraph`. Ranks from `main`
+    when present; otherwise an arbitrary node, since there is no
+    principled root for a library-style file (same reasoning as
+    `dead_functions`).
+    """
+    node_ids = sorted(call_graph.graph.nodes)
+    labels = {name: name for name in node_ids}
+    edges = [(e.caller, e.callee, "") for e in call_graph.edges]
+    root = "main" if call_graph.has_main else (node_ids[0] if node_ids else "")
+    return layered_layout(node_ids, labels, edges, root=root)

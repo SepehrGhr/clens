@@ -6,7 +6,7 @@ from clens.core.cfg import BlockKind, ControlFlowGraph, EdgeLabel
 from clens.core.diagnostics import DiagnosticCollector
 from clens.core.source import SourceFile
 from clens.languages.c.ast_nodes import FuncDecl
-from clens.languages.c.cfg_builder import build_cfg, describe_node
+from clens.languages.c.cfg_builder import build_cfg, cfg_layout, describe_node
 from clens.languages.c.parser import parse
 
 
@@ -167,3 +167,16 @@ def test_error_stmt_region_is_opaque_and_does_not_crash():
     # straight-line statements.
     cfg = _cfg_for("int f(void) { return }\n", "f")
     assert cfg is not None
+
+
+def test_cfg_layout_places_entry_first_and_exit_last():
+    cfg = _cfg_for(
+        "int factorial(int n) {\n    if (n <= 1) return 1;\n    return n * factorial(n - 1);\n}\n",
+        "factorial",
+    )
+    layout = cfg_layout(cfg)
+    assert set(layout.nodes) == {"ENTRY", "B1", "B2", "B3", "EXIT"}
+    assert layout.nodes["ENTRY"].rank < layout.nodes["B1"].rank
+    assert layout.nodes["EXIT"].rank > layout.nodes["B2"].rank
+    assert layout.nodes["EXIT"].rank > layout.nodes["B3"].rank
+    assert layout.nodes["B1"].label == "B1\nn <= 1"

@@ -18,6 +18,7 @@ from __future__ import annotations
 
 from clens.core.ast_nodes import Decl, ErrorExpr, ErrorStmt, Expr, Node
 from clens.core.cfg import BasicBlock, BlockKind, ControlFlowGraph, EdgeLabel
+from clens.core.graph_layout import Layout, layered_layout
 from clens.languages.c.ast_nodes import (
     AssignExpr,
     BinaryExpr,
@@ -45,7 +46,11 @@ from clens.languages.c.ast_nodes import (
     WhileStmt,
 )
 
-__all__ = ["build_cfg", "describe_node", "render_cfg_text"]
+__all__ = ["build_cfg", "cfg_layout", "describe_node", "render_cfg_text"]
+
+#: `BasicBlock.label()` values that get the ENTRY/EXIT accent border in
+#: `render/svg.py` -- shared by the CLI and the web UI's `/api/cfg`.
+ENTRY_EXIT_LABELS = frozenset({"ENTRY", "EXIT"})
 
 
 class _LoopContext:
@@ -322,16 +327,23 @@ def describe_node(node: Node) -> str:
     return type(node).__name__
 
 
+def ordered_blocks(cfg: ControlFlowGraph) -> list[BasicBlock]:
+    """`cfg.blocks` in display order: ENTRY first, EXIT last, regardless
+    of the order the builder happened to create them in (`entry, exit,
+    *normals` -- see `_Builder.build`). Shared by the text renderer, the
+    SVG layout, and the CLI/web JSON adapters so all four agree.
+    """
+    normals = sorted((b for b in cfg.blocks if b.kind is BlockKind.NORMAL), key=lambda b: b.id)
+    return [cfg.entry, *normals, cfg.exit]
+
+
 def render_cfg_text(cfg: ControlFlowGraph) -> str:
     """The plain-text form for `clens show-cfg` (A7.2): block contents and
     labelled successor edges, ENTRY first and EXIT last regardless of build
     order, matching the shape of the course document's §6.1 example.
     """
-    normals = sorted((b for b in cfg.blocks if b.kind is BlockKind.NORMAL), key=lambda b: b.id)
-    ordered = [cfg.entry, *normals, cfg.exit]
-
     blocks_text = []
-    for block in ordered:
+    for block in ordered_blocks(cfg):
         content = "; ".join(describe_node(s) for s in block.statements)
         header = f"{block.label()}: {content}" if content else block.label()
         edge_lines = [_edge_line(target, label) for target, label in block.successors]
@@ -343,3 +355,22 @@ def _edge_line(target: BasicBlock, label: EdgeLabel) -> str:
     if label in (EdgeLabel.TRUE, EdgeLabel.FALSE, EdgeLabel.BACK):
         return f"  --{label.value}--> {target.label()}"
     return f"  -> {target.label()}"
+
+
+def cfg_layout(cfg: ControlFlowGraph) -> Layout:
+    """The `Layout` for `render/svg.py`, shared by `clens show-cfg
+    --format svg` and the web UI's `/api/cfg` so there is exactly one
+    place that turns a `ControlFlowGraph` into node/edge geometry.
+    """
+    ordered = ordered_blocks(cfg)
+    node_ids = [b.label() for b in ordered]
+    labels = {
+        b.label(): "\n".join([b.label(), *(describe_node(s) for s in b.statements)])
+        for b in ordered
+    }
+    edges = [
+        (block.label(), target.label(), label.value)
+        for block in ordered
+        for target, label in block.successors
+    ]
+    return layered_layout(node_ids, labels, edges, root=cfg.entry.label())
