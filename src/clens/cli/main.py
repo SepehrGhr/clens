@@ -33,9 +33,11 @@ from clens.languages.c.call_graph import (
     recursive_functions,
 )
 from clens.languages.c.cfg_builder import build_cfg, describe_node, render_cfg_text
+from clens.languages.c.dead_code import DeadCodeReport, find_dead_code
 from clens.languages.c.highlighter import highlight as highlight_program
 from clens.languages.c.lexer import tokenize
 from clens.languages.c.parser import Parser
+from clens.languages.c.program_analysis import analyze_program
 from clens.languages.c.queries import (
     CompletionItem,
     HoverInfo,
@@ -112,6 +114,11 @@ def build_parser() -> argparse.ArgumentParser:
 
     callgraph_parser = subparsers.add_parser("callgraph", help="show the program's call graph")
     _add_common_arguments(callgraph_parser)
+
+    dead_code_parser = subparsers.add_parser(
+        "dead-code", help="report all five A6 dead-code categories"
+    )
+    _add_common_arguments(dead_code_parser)
 
     serve_parser = subparsers.add_parser("serve", help="start the interactive web UI")
     serve_parser.add_argument("--port", type=int, default=8000, help="port to listen on")
@@ -550,6 +557,61 @@ def _render_call_graph_text(call_graph: CallGraph) -> str:
     return "\n".join(lines)
 
 
+def _cmd_dead_code(source: SourceFile, args: argparse.Namespace) -> tuple[str, DiagnosticCollector]:
+    diagnostics = DiagnosticCollector()
+    tokens, program = _tokenize_and_parse(source, diagnostics)
+    model = analyze(program, source, diagnostics, tokens=tokens)
+    analysis = analyze_program(model)
+    report = find_dead_code(analysis)
+    if args.json:
+        return json.dumps(_dead_code_to_dict(report), indent=2), diagnostics
+    return _render_dead_code_text(report), diagnostics
+
+
+def _dead_code_to_dict(report: DeadCodeReport) -> dict:
+    return {
+        "unreachableFunctions": report.unreachable_functions,
+        "unreachableBlocks": [
+            {"function": b.function, "block": b.block_label} for b in report.unreachable_blocks
+        ],
+        "postJumpStatements": [
+            {"function": p.function, "text": p.text, "line": p.span.line, "col": p.span.column}
+            for p in report.post_jump_statements
+        ],
+        "unusedVariables": [
+            {"function": u.function, "name": u.symbol.name, "line": u.symbol.definition_loc.line}
+            for u in report.unused_variables
+        ],
+        "deadAssignments": [
+            {
+                "function": d.function,
+                "name": d.symbol.name,
+                "line": d.span.line,
+                "col": d.span.column,
+            }
+            for d in report.dead_assignments
+        ],
+    }
+
+
+def _render_dead_code_text(report: DeadCodeReport) -> str:
+    lines = []
+    for name in report.unreachable_functions:
+        lines.append(f"[warning] unreachable function: {name}")
+    for b in report.unreachable_blocks:
+        lines.append(f"[warning] unreachable block {b.block_label} in {b.function}")
+    for p in report.post_jump_statements:
+        lines.append(f"[warning] {p.function}:{p.span.line}:{p.span.column}: unreachable: {p.text}")
+    for u in report.unused_variables:
+        lines.append(f"[info] {u.function}: unused variable '{u.symbol.name}'")
+    for d in report.dead_assignments:
+        lines.append(
+            f"[warning] {d.function}:{d.span.line}:{d.span.column}: "
+            f"dead assignment to '{d.symbol.name}'"
+        )
+    return "\n".join(lines) if lines else "no dead code found"
+
+
 def _cmd_serve(args: argparse.Namespace) -> int:
     """`serve` has no `file` argument, so it bypasses `_COMMANDS` and
     `_load_source` entirely (handled in `_run`) — it starts the web UI
@@ -572,6 +634,7 @@ _COMMANDS = {
     "rename": _cmd_rename,
     "show-cfg": _cmd_show_cfg,
     "callgraph": _cmd_callgraph,
+    "dead-code": _cmd_dead_code,
 }
 
 

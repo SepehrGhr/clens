@@ -98,7 +98,7 @@ structure in it.
       other function's `n` untouched. Plus: renaming to an existing name in the same
       scope is refused; renaming to a name that would shadow is refused.
       → A5.2, A5.3
-- [ ] **Q4.8** Dead code report: all five categories, combining CFG, call graph, and
+- [x] **Q4.8** Dead code report: all five categories, combining CFG, call graph, and
       liveness. `clens dead-code`. Fixture containing all five. → A6
 
 ## Stage 5 — Visualization and web UI (≈6 commits)

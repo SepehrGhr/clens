@@ -593,3 +593,46 @@ def test_callgraph_command_json_shape(tmp_path, capsys):
     assert payload["hasMain"] is True
     assert payload["deadFunctions"] == ["dead"]
     assert {"caller": "main", "callee": "helper", "line": 2, "col": 25} in payload["edges"]
+
+
+# --- dead-code (A6, A7.2) ------------------------------------------------------
+
+
+def test_dead_code_command_text(tmp_path, capsys):
+    text = (
+        "void helper(void) { }\n"
+        "int foo(void) {\n"
+        "    return 42;\n"
+        "    return 0;\n"
+        "}\n"
+        "int main(void) { return foo(); }\n"
+    )
+    path = write(tmp_path, "a.c", text)
+    code = main(["dead-code", path])
+    out = capsys.readouterr().out
+    assert code == 0
+    assert "unreachable function: helper" in out
+    assert "unreachable block" in out
+    assert "unreachable: return 0" in out
+
+
+def test_dead_code_command_json_shape(tmp_path, capsys):
+    fixture = (
+        Path(__file__).parent.parent.parent / ".agents" / "fixtures" / "analysis" / "dead_code.c"
+    )
+    code = main(["dead-code", str(fixture), "--json"])
+    payload = json.loads(capsys.readouterr().out)
+    assert code == 0
+    assert payload["unreachableFunctions"] == ["helper"]
+    assert len(payload["unreachableBlocks"]) == 1
+    assert len(payload["postJumpStatements"]) == 2
+    assert len(payload["unusedVariables"]) == 1
+    assert len(payload["deadAssignments"]) == 1
+
+
+def test_dead_code_command_clean_file_reports_nothing(tmp_path, capsys):
+    path = write(tmp_path, "a.c", "int f(int n) { return n; }\n")
+    code = main(["dead-code", path])
+    out = capsys.readouterr().out
+    assert code == 0
+    assert out.strip() == "no dead code found"
