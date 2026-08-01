@@ -26,6 +26,12 @@ from clens.core.scopes import Scope
 from clens.core.source import SourceFile
 from clens.core.token import Span, Token, iter_significant
 from clens.languages.c.ast_nodes import FuncDecl
+from clens.languages.c.call_graph import (
+    CallGraph,
+    build_call_graph,
+    dead_functions,
+    recursive_functions,
+)
 from clens.languages.c.cfg_builder import build_cfg, describe_node, render_cfg_text
 from clens.languages.c.highlighter import highlight as highlight_program
 from clens.languages.c.lexer import tokenize
@@ -80,6 +86,9 @@ def build_parser() -> argparse.ArgumentParser:
     show_cfg_parser = subparsers.add_parser("show-cfg", help="show a function's control flow graph")
     _add_common_arguments(show_cfg_parser)
     show_cfg_parser.add_argument("function", help="name of the function to graph")
+
+    callgraph_parser = subparsers.add_parser("callgraph", help="show the program's call graph")
+    _add_common_arguments(callgraph_parser)
 
     serve_parser = subparsers.add_parser("serve", help="start the interactive web UI")
     serve_parser.add_argument("--port", type=int, default=8000, help="port to listen on")
@@ -395,6 +404,53 @@ def _cfg_to_dict(cfg: ControlFlowGraph) -> dict:
     }
 
 
+def _cmd_callgraph(source: SourceFile, args: argparse.Namespace) -> tuple[str, DiagnosticCollector]:
+    diagnostics = DiagnosticCollector()
+    tokens, program = _tokenize_and_parse(source, diagnostics)
+    model = analyze(program, source, diagnostics, tokens=tokens)
+    call_graph = build_call_graph(model)
+    if args.json:
+        return json.dumps(_call_graph_to_dict(call_graph), indent=2), diagnostics
+    return _render_call_graph_text(call_graph), diagnostics
+
+
+def _call_graph_to_dict(call_graph: CallGraph) -> dict:
+    return {
+        "nodes": sorted(call_graph.graph.nodes),
+        "edges": [
+            {"caller": e.caller, "callee": e.callee, "line": e.site.line, "col": e.site.column}
+            for e in sorted(call_graph.edges, key=lambda e: (e.caller, e.callee))
+        ],
+        "unresolved": [
+            {"caller": u.caller, "callee": u.callee_name, "line": u.site.line, "col": u.site.column}
+            for u in sorted(call_graph.unresolved, key=lambda u: (u.caller, u.callee_name))
+        ],
+        "hasMain": call_graph.has_main,
+        "deadFunctions": sorted(dead_functions(call_graph)),
+        "recursiveFunctions": sorted(recursive_functions(call_graph)),
+        "stronglyConnectedComponents": [
+            sorted(component)
+            for component in sorted(
+                call_graph.graph.strongly_connected_components(), key=lambda c: sorted(c)
+            )
+        ],
+    }
+
+
+def _render_call_graph_text(call_graph: CallGraph) -> str:
+    lines = []
+    for name in sorted(call_graph.graph.nodes):
+        callees = sorted(call_graph.graph.successors(name))
+        lines.append(f"{name} -> {', '.join(callees)}" if callees else name)
+    dead = sorted(dead_functions(call_graph))
+    if dead:
+        lines.append(f"dead: {', '.join(dead)}")
+    recursive = sorted(recursive_functions(call_graph))
+    if recursive:
+        lines.append(f"recursive: {', '.join(recursive)}")
+    return "\n".join(lines)
+
+
 def _cmd_serve(args: argparse.Namespace) -> int:
     """`serve` has no `file` argument, so it bypasses `_COMMANDS` and
     `_load_source` entirely (handled in `_run`) — it starts the web UI
@@ -413,6 +469,7 @@ _COMMANDS = {
     "complete": _cmd_complete,
     "hover": _cmd_hover,
     "show-cfg": _cmd_show_cfg,
+    "callgraph": _cmd_callgraph,
 }
 
 

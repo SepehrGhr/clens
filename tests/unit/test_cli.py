@@ -446,3 +446,36 @@ def test_show_cfg_command_prototype_has_no_graph(tmp_path, capsys):
     code = main(["show-cfg", path, "f"])
     assert code == 1
     assert "no body" in capsys.readouterr().out
+
+
+# --- callgraph (A3, A7.2) -----------------------------------------------------
+
+
+def test_callgraph_command_text(tmp_path, capsys):
+    text = (
+        "int self_recursive(int n) { if (n <= 0) return 0; return self_recursive(n - 1); }\n"
+        "int main(void) { return self_recursive(3); }\n"
+    )
+    path = write(tmp_path, "a.c", text)
+    code = main(["callgraph", path])
+    out = capsys.readouterr().out
+    assert code == 0
+    assert "main -> self_recursive" in out
+    assert "self_recursive -> self_recursive" in out
+    assert "recursive: self_recursive" in out
+
+
+def test_callgraph_command_json_shape(tmp_path, capsys):
+    text = (
+        "int helper(void) { return 1; }\n"
+        "int main(void) { return helper(); }\n"
+        "int dead(void) { return 0; }\n"
+    )
+    path = write(tmp_path, "a.c", text)
+    code = main(["callgraph", path, "--json"])
+    payload = json.loads(capsys.readouterr().out)
+    assert code == 0
+    assert set(payload["nodes"]) == {"helper", "main", "dead"}
+    assert payload["hasMain"] is True
+    assert payload["deadFunctions"] == ["dead"]
+    assert {"caller": "main", "callee": "helper", "line": 2, "col": 25} in payload["edges"]
