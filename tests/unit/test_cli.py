@@ -403,6 +403,66 @@ def test_unexpected_internal_error_exits_2_without_traceback(monkeypatch, tmp_pa
     assert "Traceback" not in err
 
 
+# --- goto-def / find-refs (A4, A7.2) ------------------------------------------
+
+
+def test_goto_def_command_text(tmp_path, capsys):
+    text = "int factorial(int n) { return n; }\nint g(void) { return factorial(1); }\n"
+    path = write(tmp_path, "a.c", text)
+    code = main(["goto-def", path, "2", "22"])
+    out = capsys.readouterr().out
+    assert code == 0
+    assert "factorial" in out
+    assert ":1:5" in out
+
+
+def test_goto_def_command_no_definition_at_a_keyword(tmp_path, capsys):
+    path = write(tmp_path, "a.c", "int f(void) { return 1; }\n")
+    code = main(["goto-def", path, "1", "16"])
+    out = capsys.readouterr().out
+    assert code == 0
+    assert "no definition" in out
+
+
+def test_find_refs_command_text_matches_course_document_shape(tmp_path, capsys):
+    text = "int factorial(int n) { return n; }\nint g(void) { return factorial(1); }\n"
+    path = write(tmp_path, "a.c", text)
+    code = main(["find-refs", path, "factorial"])
+    out = capsys.readouterr().out
+    assert code == 0
+    assert "defined at" in out
+    assert ":1:5" in out
+    assert ":2:22" in out
+
+
+def test_find_refs_command_json_shape(tmp_path, capsys):
+    text = "int factorial(int n) { return n; }\nint g(void) { return factorial(1); }\n"
+    path = write(tmp_path, "a.c", text)
+    code = main(["find-refs", path, "factorial", "--json"])
+    payload = json.loads(capsys.readouterr().out)
+    assert code == 0
+    assert payload["symbol"] == "factorial"
+    assert payload["defined_at"] == {"file": path, "line": 1, "col": 5}
+    assert len(payload["references"]) == 1
+
+
+def test_find_refs_command_ambiguous_name_lists_every_match(tmp_path, capsys):
+    text = "int n;\nint f(int n) { return n; }\n"
+    path = write(tmp_path, "a.c", text)
+    code = main(["find-refs", path, "n", "--json"])
+    payload = json.loads(capsys.readouterr().out)
+    assert code == 0
+    assert isinstance(payload, list)
+    assert len(payload) == 2
+
+
+def test_find_refs_command_unknown_symbol_reports_error(tmp_path, capsys):
+    path = write(tmp_path, "a.c", "int f(void) { return 1; }\n")
+    code = main(["find-refs", path, "does_not_exist"])
+    assert code == 1
+    assert "does_not_exist" in capsys.readouterr().out
+
+
 # --- show-cfg (A1, A7.2) -----------------------------------------------------
 
 

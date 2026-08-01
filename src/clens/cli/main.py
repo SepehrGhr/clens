@@ -40,6 +40,10 @@ from clens.languages.c.queries import (
     CompletionItem,
     HoverInfo,
     completions_at,
+    definition_info_to_dict,
+    find_references_by_name,
+    find_references_to_dict,
+    goto_definition_at,
     hover_at,
     scope_to_dict,
 )
@@ -82,6 +86,14 @@ def build_parser() -> argparse.ArgumentParser:
     hover_parser = subparsers.add_parser("hover", help="hover info at a cursor")
     _add_common_arguments(hover_parser)
     _add_position_arguments(hover_parser)
+
+    goto_def_parser = subparsers.add_parser("goto-def", help="go to a symbol's definition")
+    _add_common_arguments(goto_def_parser)
+    _add_position_arguments(goto_def_parser)
+
+    find_refs_parser = subparsers.add_parser("find-refs", help="find every reference to a symbol")
+    _add_common_arguments(find_refs_parser)
+    find_refs_parser.add_argument("symbol", help="name of the symbol to find references to")
 
     show_cfg_parser = subparsers.add_parser("show-cfg", help="show a function's control flow graph")
     _add_common_arguments(show_cfg_parser)
@@ -366,6 +378,53 @@ def _position_result_to_jsonable(result: list[CompletionItem] | HoverInfo | None
     }
 
 
+def _cmd_goto_def(source: SourceFile, args: argparse.Namespace) -> tuple[str, DiagnosticCollector]:
+    diagnostics = DiagnosticCollector()
+    offset = _offset_for(source, args, diagnostics)
+    if offset is None:
+        return _position_error_output(diagnostics, args), diagnostics
+    tokens, program = _tokenize_and_parse(source, diagnostics)
+    model = analyze(program, source, diagnostics, tokens=tokens)
+    info = goto_definition_at(model, offset)
+    if info is None:
+        if args.json:
+            return json.dumps({"result": None}, indent=2), diagnostics
+        return "no definition found", diagnostics
+    payload = definition_info_to_dict(model, info)
+    if args.json:
+        return json.dumps(payload, indent=2), diagnostics
+    return _render_definition_text(payload), diagnostics
+
+
+def _render_definition_text(payload: dict) -> str:
+    d = payload["defined_at"]
+    return (
+        f"{payload['symbol']} ({payload['kind']} {payload['type']}) "
+        f"defined at {d['file']}:{d['line']}:{d['col']}"
+    )
+
+
+def _cmd_find_refs(source: SourceFile, args: argparse.Namespace) -> tuple[str, DiagnosticCollector]:
+    diagnostics = DiagnosticCollector()
+    tokens, program = _tokenize_and_parse(source, diagnostics)
+    model = analyze(program, source, diagnostics, tokens=tokens)
+    matches = find_references_by_name(model, args.symbol)
+    if not matches:
+        diagnostics.add(_file_error(args.file, f"no such symbol: {args.symbol}"))
+        return _position_error_output(diagnostics, args), diagnostics
+    payloads = [find_references_to_dict(model, symbol, refs) for symbol, refs in matches]
+    if args.json:
+        result = payloads[0] if len(payloads) == 1 else payloads
+        return json.dumps(result, indent=2), diagnostics
+    return "\n\n".join(_render_find_refs_text(p) for p in payloads), diagnostics
+
+
+def _render_find_refs_text(payload: dict) -> str:
+    lines = [_render_definition_text(payload)]
+    lines.extend(f"  {r['file']}:{r['line']}:{r['col']}" for r in payload["references"])
+    return "\n".join(lines)
+
+
 def _cmd_show_cfg(source: SourceFile, args: argparse.Namespace) -> tuple[str, DiagnosticCollector]:
     diagnostics = DiagnosticCollector()
     _, program = _tokenize_and_parse(source, diagnostics)
@@ -468,6 +527,8 @@ _COMMANDS = {
     "symbols": _cmd_symbols,
     "complete": _cmd_complete,
     "hover": _cmd_hover,
+    "goto-def": _cmd_goto_def,
+    "find-refs": _cmd_find_refs,
     "show-cfg": _cmd_show_cfg,
     "callgraph": _cmd_callgraph,
 }

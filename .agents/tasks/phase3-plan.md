@@ -83,13 +83,13 @@ structure in it.
 
 → `skills/navigation`, then `skills/refactoring`.
 
-- [ ] **Q4.1** `goto_definition_at(model, offset)` in `languages/c/queries.py`.
+- [x] **Q4.1** `goto_definition_at(model, offset)` in `languages/c/queries.py`.
       Nearly free — it is `Symbol.definition_loc`. → A4.1
-- [ ] **Q4.2** `find_references(model, symbol)` — `Symbol.references`. Include the
+- [x] **Q4.2** `find_references(model, symbol)` — `Symbol.references`. Include the
       definition site itself in the result, flagged. → A4.2
-- [ ] **Q4.3** The §6.3 JSON shape, exactly — note the key is `col`, not `column`.
+- [x] **Q4.3** The §6.3 JSON shape, exactly — note the key is `col`, not `column`.
       Golden test. → A4.4
-- [ ] **Q4.4** `clens goto-def` and `clens find-refs` CLI commands. → A7.2
+- [x] **Q4.4** `clens goto-def` and `clens find-refs` CLI commands. → A7.2
 - [ ] **Q4.5** Rename: conflict check and shadow check against the scope tree.
       → A5.1 steps 2–3
 - [ ] **Q4.6** Rename: unified diff via `difflib.unified_diff`, and atomic
