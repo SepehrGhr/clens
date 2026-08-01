@@ -22,6 +22,7 @@ from clens.core.ast_nodes import Node
 from clens.core.ast_printer import format_ast
 from clens.core.cfg import BlockKind, ControlFlowGraph
 from clens.core.diagnostics import Diagnostic, DiagnosticCollector, Position, Severity
+from clens.core.graph_layout import layered_layout
 from clens.core.scopes import Scope
 from clens.core.source import SourceFile
 from clens.core.token import Span, Token, iter_significant
@@ -53,6 +54,7 @@ from clens.languages.c.rename import rename_symbol_at
 from clens.languages.c.semantic import analyze
 from clens.render.ansi import render_ansi
 from clens.render.html import render_html
+from clens.render.svg import render_svg
 from clens.web.server import serve
 
 
@@ -111,9 +113,15 @@ def build_parser() -> argparse.ArgumentParser:
     show_cfg_parser = subparsers.add_parser("show-cfg", help="show a function's control flow graph")
     _add_common_arguments(show_cfg_parser)
     show_cfg_parser.add_argument("function", help="name of the function to graph")
+    show_cfg_parser.add_argument(
+        "--format", choices=["text", "svg"], default="text", help="output format (default: text)"
+    )
 
     callgraph_parser = subparsers.add_parser("callgraph", help="show the program's call graph")
     _add_common_arguments(callgraph_parser)
+    callgraph_parser.add_argument(
+        "--format", choices=["text", "svg"], default="text", help="output format (default: text)"
+    )
 
     dead_code_parser = subparsers.add_parser(
         "dead-code", help="report all five A6 dead-code categories"
@@ -488,7 +496,26 @@ def _cmd_show_cfg(source: SourceFile, args: argparse.Namespace) -> tuple[str, Di
         return _position_error_output(diagnostics, args), diagnostics
     if args.json:
         return json.dumps(_cfg_to_dict(cfg), indent=2), diagnostics
+    if args.format == "svg":
+        svg = render_svg(_cfg_layout(cfg), highlighted_ids=frozenset({"ENTRY", "EXIT"}))
+        return svg, diagnostics
     return render_cfg_text(cfg), diagnostics
+
+
+def _cfg_layout(cfg: ControlFlowGraph):
+    normals = sorted((b for b in cfg.blocks if b.kind is BlockKind.NORMAL), key=lambda b: b.id)
+    ordered = [cfg.entry, *normals, cfg.exit]
+    node_ids = [b.label() for b in ordered]
+    labels = {
+        b.label(): "\n".join([b.label(), *(describe_node(s) for s in b.statements)])
+        for b in ordered
+    }
+    edges = [
+        (block.label(), target.label(), label.value)
+        for block in ordered
+        for target, label in block.successors
+    ]
+    return layered_layout(node_ids, labels, edges, root=cfg.entry.label())
 
 
 def _cfg_to_dict(cfg: ControlFlowGraph) -> dict:
@@ -517,7 +544,17 @@ def _cmd_callgraph(source: SourceFile, args: argparse.Namespace) -> tuple[str, D
     call_graph = build_call_graph(model)
     if args.json:
         return json.dumps(_call_graph_to_dict(call_graph), indent=2), diagnostics
+    if args.format == "svg":
+        return render_svg(_call_graph_layout(call_graph)), diagnostics
     return _render_call_graph_text(call_graph), diagnostics
+
+
+def _call_graph_layout(call_graph: CallGraph):
+    node_ids = sorted(call_graph.graph.nodes)
+    labels = {name: name for name in node_ids}
+    edges = [(e.caller, e.callee, "") for e in call_graph.edges]
+    root = "main" if call_graph.has_main else (node_ids[0] if node_ids else "")
+    return layered_layout(node_ids, labels, edges, root=root)
 
 
 def _call_graph_to_dict(call_graph: CallGraph) -> dict:

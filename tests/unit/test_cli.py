@@ -562,6 +562,15 @@ def test_show_cfg_command_prototype_has_no_graph(tmp_path, capsys):
     assert "no body" in capsys.readouterr().out
 
 
+def test_show_cfg_command_svg_format(tmp_path, capsys):
+    path = write(tmp_path, "a.c", "int f(void) { return 1; }\n")
+    code = main(["show-cfg", path, "f", "--format", "svg"])
+    out = capsys.readouterr().out
+    assert code == 0
+    assert out.startswith("<svg")
+    assert out.rstrip().endswith("</svg>")
+
+
 # --- callgraph (A3, A7.2) -----------------------------------------------------
 
 
@@ -593,6 +602,16 @@ def test_callgraph_command_json_shape(tmp_path, capsys):
     assert payload["hasMain"] is True
     assert payload["deadFunctions"] == ["dead"]
     assert {"caller": "main", "callee": "helper", "line": 2, "col": 25} in payload["edges"]
+
+
+def test_callgraph_command_svg_format(tmp_path, capsys):
+    text = "int f(void) { return 1; }\nint main(void) { return f(); }\n"
+    path = write(tmp_path, "a.c", text)
+    code = main(["callgraph", path, "--format", "svg"])
+    out = capsys.readouterr().out
+    assert code == 0
+    assert out.startswith("<svg")
+    assert out.rstrip().endswith("</svg>")
 
 
 # --- dead-code (A6, A7.2) ------------------------------------------------------

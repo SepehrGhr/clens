@@ -105,12 +105,12 @@ structure in it.
 
 → `skills/cfg` (rendering section).
 
-- [ ] **Q5.1** `core/graph_layout.py`: layered layout — rank by BFS depth, center
+- [x] **Q5.1** `core/graph_layout.py`: layered layout — rank by BFS depth, center
       each rank, route edges orthogonally, curve back-edges. Pure geometry, no I/O,
       unit-testable. → D28
-- [ ] **Q5.2** `render/svg.py`: emit SVG from a laid-out graph, using
+- [x] **Q5.2** `render/svg.py`: emit SVG from a laid-out graph, using
       `core/theme.py` colors. Serves both CFG and call graph.
-- [ ] **Q5.3** `clens show-cfg --format svg -o out.svg` and
+- [x] **Q5.3** `clens show-cfg --format svg -o out.svg` and
       `clens callgraph --format svg`.
 - [ ] **Q5.4** Web endpoints `/api/cfg` and `/api/callgraph`, following the existing
       `handle_*` + `_POST_ROUTES` + `dispatch_post` pattern exactly. Tested via
