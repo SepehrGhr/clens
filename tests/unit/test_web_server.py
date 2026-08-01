@@ -20,7 +20,10 @@ from clens.web.server import (
     ClensRequestHandler,
     dispatch_post,
     handle_analyze,
+    handle_callgraph,
+    handle_cfg,
     handle_complete,
+    handle_dead_code,
     handle_hover,
 )
 
@@ -102,6 +105,79 @@ def test_handle_hover_no_symbol_at_position_returns_none_info():
     assert result == {"info": None}
 
 
+# --- /api/cfg ----------------------------------------------------------
+
+
+def test_handle_cfg_returns_svg_for_a_known_function():
+    text = (
+        "int factorial(int n) {\n    if (n <= 1) return 1;\n    return n * factorial(n - 1);\n}\n"
+    )
+    result = handle_cfg({"source": text, "function": "factorial"})
+    assert result["svg"].startswith("<svg")
+    assert result["svg"].rstrip().endswith("</svg>")
+
+
+def test_handle_cfg_unknown_function_reports_error_not_a_500():
+    result = handle_cfg({"source": "int f(void) { return 1; }\n", "function": "nope"})
+    assert result["svg"] is None
+    assert "nope" in result["error"]
+
+
+def test_handle_cfg_prototype_reports_error_not_a_500():
+    result = handle_cfg({"source": "int f(int n);\n", "function": "f"})
+    assert result["svg"] is None
+    assert "no body" in result["error"]
+
+
+def test_handle_cfg_missing_function_field_reports_error():
+    result = handle_cfg({"source": "int f(void) { return 1; }\n"})
+    assert result["svg"] is None
+
+
+# --- /api/callgraph ------------------------------------------------------
+
+
+def test_handle_callgraph_returns_svg_and_dead_and_recursive_functions():
+    text = "void helper(void) { }\nint f(void) { return f(); }\nint main(void) { return f(); }\n"
+    result = handle_callgraph({"source": text})
+    assert result["svg"].startswith("<svg")
+    assert result["deadFunctions"] == ["helper"]
+    assert result["recursiveFunctions"] == ["f"]
+
+
+def test_handle_callgraph_empty_source_does_not_crash():
+    result = handle_callgraph({})
+    assert result["svg"].startswith("<svg")
+    assert result["deadFunctions"] == []
+
+
+# --- /api/dead-code ------------------------------------------------------
+
+
+def test_handle_dead_code_reports_all_categories():
+    text = (
+        "void helper(void) { }\n"
+        "int foo(void) {\n"
+        "    return 42;\n"
+        "    return 0;\n"
+        "}\n"
+        "int main(void) { return foo(); }\n"
+    )
+    result = handle_dead_code({"source": text})
+    assert result["unreachableFunctions"] == ["helper"]
+    assert len(result["unreachableBlocks"]) == 1
+    assert len(result["postJumpStatements"]) == 1
+
+
+def test_handle_dead_code_clean_source_reports_nothing():
+    result = handle_dead_code({"source": "int f(int n) { return n; }\n"})
+    assert result["unreachableFunctions"] == []
+    assert result["unreachableBlocks"] == []
+    assert result["postJumpStatements"] == []
+    assert result["unusedVariables"] == []
+    assert result["deadAssignments"] == []
+
+
 # --- dispatch_post routing, malformed input, errors ------------------------
 
 
@@ -131,6 +207,27 @@ def test_dispatch_post_analyze_route_end_to_end():
     payload, status = dispatch_post("/api/analyze", b'{"source": "int g;\\n"}')
     assert status == 200
     assert payload["symbols"]["symbols"][0]["name"] == "g"
+
+
+def test_dispatch_post_cfg_route_end_to_end():
+    body = b'{"source": "int f(void) { return 1; }\\n", "function": "f"}'
+    payload, status = dispatch_post("/api/cfg", body)
+    assert status == 200
+    assert payload["svg"].startswith("<svg")
+
+
+def test_dispatch_post_callgraph_route_end_to_end():
+    body = b'{"source": "int f(void) { return 1; }\\n"}'
+    payload, status = dispatch_post("/api/callgraph", body)
+    assert status == 200
+    assert payload["svg"].startswith("<svg")
+
+
+def test_dispatch_post_dead_code_route_end_to_end():
+    body = b'{"source": "int f(int n) { return n; }\\n"}'
+    payload, status = dispatch_post("/api/dead-code", body)
+    assert status == 200
+    assert payload["unreachableFunctions"] == []
 
 
 def test_dispatch_post_handler_raising_is_a_500_not_a_crash(monkeypatch):

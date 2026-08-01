@@ -112,7 +112,7 @@ structure in it.
       `core/theme.py` colors. Serves both CFG and call graph.
 - [x] **Q5.3** `clens show-cfg --format svg -o out.svg` and
       `clens callgraph --format svg`.
-- [ ] **Q5.4** Web endpoints `/api/cfg` and `/api/callgraph`, following the existing
+- [x] **Q5.4** Web endpoints `/api/cfg` and `/api/callgraph`, following the existing
       `handle_*` + `_POST_ROUTES` + `dispatch_post` pattern exactly. Tested via
       `dispatch_post`, no socket. → A7.3
 - [ ] **Q5.5** Web UI panels: a function picker driving a CFG pane, a call-graph

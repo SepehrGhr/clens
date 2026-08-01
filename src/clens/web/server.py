@@ -19,18 +19,32 @@ from typing import Any
 from clens.core.diagnostics import DiagnosticCollector
 from clens.core.source import SourceFile
 from clens.core.token import iter_significant
+from clens.languages.c.ast_nodes import FuncDecl
+from clens.languages.c.call_graph import (
+    build_call_graph,
+    call_graph_layout,
+    dead_functions,
+    recursive_functions,
+)
+from clens.languages.c.cfg_builder import ENTRY_EXIT_LABELS, build_cfg, cfg_layout
+from clens.languages.c.dead_code import find_dead_code
 from clens.languages.c.highlighter import highlight as highlight_program
 from clens.languages.c.lexer import tokenize
 from clens.languages.c.parser import Parser
+from clens.languages.c.program_analysis import analyze_program
 from clens.languages.c.queries import completions_at, hover_at, scope_to_dict
 from clens.languages.c.semantic import analyze
+from clens.render.svg import render_svg
 from clens.web.renderer import generate_theme_css, render_interactive
 
 __all__ = [
     "ClensRequestHandler",
     "dispatch_post",
     "handle_analyze",
+    "handle_callgraph",
+    "handle_cfg",
     "handle_complete",
+    "handle_dead_code",
     "handle_hover",
     "serve",
 ]
@@ -100,6 +114,72 @@ def handle_hover(body: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def handle_cfg(body: dict[str, Any]) -> dict[str, Any]:
+    """`{source, function}` -> `{svg}`, or `{svg: None, error}` if there is
+    no such function or it is a prototype with no body -- never a 500;
+    both are ordinary, expected states while a user is editing.
+    """
+    text = body.get("source", "")
+    function_name = body.get("function", "")
+    _source, _diagnostics, _tokens, program, _model = _build_model(text)
+    func = next(
+        (d for d in program.declarations if isinstance(d, FuncDecl) and d.name == function_name),
+        None,
+    )
+    if func is None:
+        return {"svg": None, "error": f"no such function: {function_name}"}
+    cfg = build_cfg(func)
+    if cfg is None:
+        return {"svg": None, "error": f"{function_name} has no body (a prototype)"}
+    svg = render_svg(cfg_layout(cfg), highlighted_ids=ENTRY_EXIT_LABELS)
+    return {"svg": svg}
+
+
+def handle_callgraph(body: dict[str, Any]) -> dict[str, Any]:
+    """`{source}` -> `{svg, deadFunctions, recursiveFunctions}`."""
+    text = body.get("source", "")
+    _source, _diagnostics, _tokens, _program, model = _build_model(text)
+    call_graph = build_call_graph(model)
+    svg = render_svg(call_graph_layout(call_graph))
+    return {
+        "svg": svg,
+        "deadFunctions": sorted(dead_functions(call_graph)),
+        "recursiveFunctions": sorted(recursive_functions(call_graph)),
+    }
+
+
+def handle_dead_code(body: dict[str, Any]) -> dict[str, Any]:
+    """`{source}` -> `{unreachableFunctions, unreachableBlocks,
+    postJumpStatements, unusedVariables, deadAssignments}` (A6)."""
+    text = body.get("source", "")
+    _source, _diagnostics, _tokens, _program, model = _build_model(text)
+    analysis = analyze_program(model)
+    report = find_dead_code(analysis)
+    return {
+        "unreachableFunctions": report.unreachable_functions,
+        "unreachableBlocks": [
+            {"function": b.function, "block": b.block_label} for b in report.unreachable_blocks
+        ],
+        "postJumpStatements": [
+            {"function": p.function, "text": p.text, "line": p.span.line, "col": p.span.column}
+            for p in report.post_jump_statements
+        ],
+        "unusedVariables": [
+            {"function": u.function, "name": u.symbol.name, "line": u.symbol.definition_loc.line}
+            for u in report.unused_variables
+        ],
+        "deadAssignments": [
+            {
+                "function": d.function,
+                "name": d.symbol.name,
+                "line": d.span.line,
+                "col": d.span.column,
+            }
+            for d in report.dead_assignments
+        ],
+    }
+
+
 def _offset_and_model(body: dict[str, Any]):
     """Shared by complete/hover: build a model from `body["source"]` and
     convert `body["line"]`/`body["column"]` to an offset. Never raises —
@@ -122,6 +202,9 @@ _POST_ROUTES = {
     "/api/analyze": handle_analyze,
     "/api/complete": handle_complete,
     "/api/hover": handle_hover,
+    "/api/cfg": handle_cfg,
+    "/api/callgraph": handle_callgraph,
+    "/api/dead-code": handle_dead_code,
 }
 
 
