@@ -47,6 +47,7 @@ from clens.languages.c.queries import (
     hover_at,
     scope_to_dict,
 )
+from clens.languages.c.rename import rename_symbol_at
 from clens.languages.c.semantic import analyze
 from clens.render.ansi import render_ansi
 from clens.render.html import render_html
@@ -94,6 +95,16 @@ def build_parser() -> argparse.ArgumentParser:
     find_refs_parser = subparsers.add_parser("find-refs", help="find every reference to a symbol")
     _add_common_arguments(find_refs_parser)
     find_refs_parser.add_argument("symbol", help="name of the symbol to find references to")
+
+    rename_parser = subparsers.add_parser("rename", help="scope-aware rename by symbol identity")
+    _add_common_arguments(rename_parser)
+    _add_position_arguments(rename_parser)
+    rename_parser.add_argument("new_name", help="the new name")
+    rename_parser.add_argument(
+        "--apply",
+        action="store_true",
+        help="write the change to disk (default: show the diff only)",
+    )
 
     show_cfg_parser = subparsers.add_parser("show-cfg", help="show a function's control flow graph")
     _add_common_arguments(show_cfg_parser)
@@ -340,7 +351,14 @@ def _offset_for(
 
 
 def _position_error_output(diagnostics: DiagnosticCollector, args: argparse.Namespace) -> str:
-    message = diagnostics.diagnostics[0].message
+    """Render the *most recently added* diagnostic as the command's error
+    output. Always the last one, not the first: for a plain out-of-range
+    line/col this is the only diagnostic there is, but `find-refs`,
+    `rename`, and `show-cfg` add their own "not found" error *after*
+    already running the full pipeline, so earlier semantic diagnostics
+    (a warning on an unrelated line) must not bury it.
+    """
+    message = diagnostics.diagnostics[-1].message
     if args.json:
         return json.dumps({"error": message}, indent=2)
     return f"clens: {message}"
@@ -423,6 +441,28 @@ def _render_find_refs_text(payload: dict) -> str:
     lines = [_render_definition_text(payload)]
     lines.extend(f"  {r['file']}:{r['line']}:{r['col']}" for r in payload["references"])
     return "\n".join(lines)
+
+
+def _cmd_rename(source: SourceFile, args: argparse.Namespace) -> tuple[str, DiagnosticCollector]:
+    diagnostics = DiagnosticCollector()
+    offset = _offset_for(source, args, diagnostics)
+    if offset is None:
+        return _position_error_output(diagnostics, args), diagnostics
+    tokens, program = _tokenize_and_parse(source, diagnostics)
+    model = analyze(program, source, diagnostics, tokens=tokens)
+    result = rename_symbol_at(model, source, offset, args.new_name)
+    if not result.ok:
+        diagnostics.add(_file_error(args.file, result.error or "rename refused"))
+        return _position_error_output(diagnostics, args), diagnostics
+    if args.apply:
+        Path(args.file).write_text(result.new_text)
+    if args.json:
+        payload = {"diff": result.diff, "applied": args.apply}
+        return json.dumps(payload, indent=2), diagnostics
+    output = result.diff
+    if args.apply:
+        output += "\napplied.\n"
+    return output, diagnostics
 
 
 def _cmd_show_cfg(source: SourceFile, args: argparse.Namespace) -> tuple[str, DiagnosticCollector]:
@@ -529,6 +569,7 @@ _COMMANDS = {
     "hover": _cmd_hover,
     "goto-def": _cmd_goto_def,
     "find-refs": _cmd_find_refs,
+    "rename": _cmd_rename,
     "show-cfg": _cmd_show_cfg,
     "callgraph": _cmd_callgraph,
 }

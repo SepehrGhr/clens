@@ -463,6 +463,60 @@ def test_find_refs_command_unknown_symbol_reports_error(tmp_path, capsys):
     assert "does_not_exist" in capsys.readouterr().out
 
 
+# --- rename (A5, A7.2) --------------------------------------------------------
+
+
+def test_rename_command_shows_a_diff_by_default_without_writing(tmp_path, capsys):
+    text = "int f(int n) { return n; }\n"
+    path = write(tmp_path, "a.c", text)
+    code = main(["rename", path, "1", "11", "count"])
+    out = capsys.readouterr().out
+    assert code == 0
+    assert "-int f(int n)" in out
+    assert "+int f(int count)" in out
+    assert Path(path).read_text() == text  # not written without --apply
+
+
+def test_rename_command_apply_writes_the_file(tmp_path, capsys):
+    text = "int f(int n) { return n; }\n"
+    path = write(tmp_path, "a.c", text)
+    code = main(["rename", path, "1", "11", "count", "--apply"])
+    capsys.readouterr()
+    assert code == 0
+    assert Path(path).read_text() == "int f(int count) { return count; }\n"
+
+
+def test_rename_command_json_shape(tmp_path, capsys):
+    text = "int f(int n) { return n; }\n"
+    path = write(tmp_path, "a.c", text)
+    code = main(["rename", path, "1", "11", "count", "--json"])
+    payload = json.loads(capsys.readouterr().out)
+    assert code == 0
+    assert payload["applied"] is False
+    assert "+int f(int count)" in payload["diff"]
+
+
+def test_rename_command_refusal_reports_the_reason_not_an_unrelated_diagnostic(tmp_path, capsys):
+    """A refused rename's message must be the refusal reason itself, even
+    when the file has an earlier, unrelated semantic diagnostic (an
+    unused-variable info here) that gets recorded first in the same
+    collector -- the CLI must not print that one instead."""
+    text = "int g = 0;\nint f(int g) { int unused_local; return g; }\n"
+    path = write(tmp_path, "a.c", text)
+    code = main(["rename", path, "2", "11", "g"])
+    out = capsys.readouterr().out
+    assert code == 1
+    assert "already the current name" in out
+    assert "unused_local" not in out
+
+
+def test_rename_command_no_symbol_at_position_is_refused(tmp_path, capsys):
+    path = write(tmp_path, "a.c", "int f(void) { return 1; }\n")
+    code = main(["rename", path, "1", "16", "whatever"])
+    assert code == 1
+    assert "no symbol" in capsys.readouterr().out
+
+
 # --- show-cfg (A1, A7.2) -----------------------------------------------------
 
 

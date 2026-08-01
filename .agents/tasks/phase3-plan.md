@@ -90,11 +90,11 @@ structure in it.
 - [x] **Q4.3** The §6.3 JSON shape, exactly — note the key is `col`, not `column`.
       Golden test. → A4.4
 - [x] **Q4.4** `clens goto-def` and `clens find-refs` CLI commands. → A7.2
-- [ ] **Q4.5** Rename: conflict check and shadow check against the scope tree.
+- [x] **Q4.5** Rename: conflict check and shadow check against the scope tree.
       → A5.1 steps 2–3
-- [ ] **Q4.6** Rename: unified diff via `difflib.unified_diff`, and atomic
+- [x] **Q4.6** Rename: unified diff via `difflib.unified_diff`, and atomic
       application. → A5.1 steps 4–5
-- [ ] **Q4.7** **The A5.3 golden test**: renaming `n` in `factorial` leaves every
+- [x] **Q4.7** **The A5.3 golden test**: renaming `n` in `factorial` leaves every
       other function's `n` untouched. Plus: renaming to an existing name in the same
       scope is refused; renaming to a name that would shadow is refused.
       → A5.2, A5.3
