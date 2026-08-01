@@ -45,21 +45,21 @@ structure in it.
 
 → `skills/dataflow`.
 
-- [ ] **Q2.1** `core/dataflow.py`: the generic worklist solver, parameterized by
+- [x] **Q2.1** `core/dataflow.py`: the generic worklist solver, parameterized by
       direction, join, transfer, and initial value. Tested standalone on a toy
       lattice before any real analysis uses it. → D26
-- [ ] **Q2.2** Per-block gen/kill sets from `Reference.is_read` / `is_write`.
+- [x] **Q2.2** Per-block gen/kill sets from `Reference.is_read` / `is_write`.
       **Reuse Phase 2's reference data; do not re-derive read/write from the AST.**
-- [ ] **Q2.3** Definite assignment: forward, intersection, must. Produces the real
+- [x] **Q2.3** Definite assignment: forward, intersection, must. Produces the real
       row-12 diagnostic. Golden case: `int x; if (c) { x = 42; } printf(x);` →
       warning. → A2.1
-- [ ] **Q2.4** Live variables: backward, union, may. → A2.2
-- [ ] **Q2.5** Unreachable code: blocks with no incoming edges, plus post-jump
+- [x] **Q2.4** Live variables: backward, union, may. → A2.2
+- [x] **Q2.5** Unreachable code: blocks with no incoming edges, plus post-jump
       statements. Warning severity. → A2.3
-- [ ] **Q2.6** Replace `usage.py`'s crude row-12/13 logic with the real results.
+- [x] **Q2.6** Replace `usage.py`'s crude row-12/13 logic with the real results.
       Same codes (`S008`, `S009`), same severities. **Rewrite** the corresponding
       `docs/known-limitations.md` entry. → D27
-- [ ] **Q2.7** **Bonus — reaching definitions.** One more solver configuration,
+- [x] **Q2.7** **Bonus — reaching definitions.** One more solver configuration,
       ~15 lines. Do it now while the machinery is fresh. Write
       `docs/bonus/reaching-definitions.md` in the same commit. → D29
 

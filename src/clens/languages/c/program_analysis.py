@@ -4,8 +4,8 @@ results all cost something to build; a `SemanticModel` consumer that never
 asks for Phase 3 analysis (completion, hover, `clens check`) should never
 pay for it.
 
-`call_graph` and `dataflow` start as placeholders and are typed and filled
-in as Stage 2 (data-flow) and Stage 3 (call graph) land.
+`call_graph` is still a placeholder, typed and filled in when Stage 3
+lands.
 """
 
 from __future__ import annotations
@@ -13,6 +13,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
+from clens.languages.c.analyses import DataFlowResults, analyze_function, collect_local_symbols
 from clens.languages.c.ast_nodes import FuncDecl
 from clens.languages.c.cfg_builder import build_cfg
 
@@ -33,7 +34,7 @@ class ProgramAnalysis:
     model: SemanticModel
     cfgs: dict[str, ControlFlowGraph] = field(default_factory=dict)
     call_graph: object = None
-    dataflow: dict[str, object] = field(default_factory=dict)
+    dataflow: dict[str, DataFlowResults] = field(default_factory=dict)
 
 
 def analyze_program(model: SemanticModel) -> ProgramAnalysis:
@@ -42,9 +43,12 @@ def analyze_program(model: SemanticModel) -> ProgramAnalysis:
     never returns `None`.
     """
     cfgs: dict[str, ControlFlowGraph] = {}
+    dataflow: dict[str, DataFlowResults] = {}
     for decl in model.program.declarations:
         if isinstance(decl, FuncDecl):
             cfg = build_cfg(decl)
             if cfg is not None:
                 cfgs[decl.name] = cfg
-    return ProgramAnalysis(model=model, cfgs=cfgs)
+                symbols = collect_local_symbols(model, decl)
+                dataflow[decl.name] = analyze_function(cfg, symbols)
+    return ProgramAnalysis(model=model, cfgs=cfgs, dataflow=dataflow)

@@ -34,9 +34,23 @@ def test_analyze_program_builds_a_cfg_per_function_with_a_body():
 def test_analyze_program_never_raises_on_an_empty_file():
     analysis = _analyze("")
     assert analysis.cfgs == {}
+    assert analysis.dataflow == {}
 
 
-def test_analyze_program_call_graph_and_dataflow_start_empty():
+def test_analyze_program_call_graph_still_a_placeholder():
     analysis = _analyze("int f(void) { return 1; }\n")
     assert analysis.call_graph is None
-    assert analysis.dataflow == {}
+
+
+def test_analyze_program_builds_dataflow_results_per_function():
+    analysis = _analyze(
+        "int report(int value);\n"
+        "int f(int condition) {\n"
+        "    int x;\n"
+        "    if (condition) { x = 42; }\n"
+        "    return report(x);\n"
+        "}\n"
+    )
+    assert set(analysis.dataflow) == {"f"}
+    violations = analysis.dataflow["f"].uninitialized_uses
+    assert {v.symbol.name for v in violations} == {"x"}
