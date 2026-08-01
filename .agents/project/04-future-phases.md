@@ -1,52 +1,28 @@
-# Future Phases — Phase 3 Hooks
+# Post-Project Future Work
 
-**Do not implement anything in this file.** It exists so you understand why some
-Phase 2 structures look over-built, and so you do not optimize them away.
+Phases 1, 2, and 3 are the project. This file records what is deliberately deferred
+**past** the project, and exists so nobody implements it mid-Phase-3 by accident.
 
-Phase 2's own needs are no longer listed here — they are live requirements now, in
-`06-phase2-requirements.md`.
+The user-facing version of this list is `docs/future-work.md` (requirement A10,
+decision D30) — write that with full detail per `skills/bonus-docs/SKILL.md`. This
+file is the short internal version.
 
----
+## Deferred, with the reason
 
-## Phase 3 will need (CFG, call graph, navigation, refactoring)
+| Item | Why deferred | Plugs into |
+|---|---|---|
+| **Dominator / post-dominator trees** | Bonus, not required. Naive iterative algorithm is ~20 lines and matches Lengauer-Tarjan on graphs this size | `core/cfg.py` |
+| **Dominance frontier + SSA form** | Highest-value remaining bonus, and the one most likely to overrun. Frontier is cheap once dominators exist; φ-placement and renaming is the real work | after dominators |
+| **Java as a second language** (D32) | Was the cheapest bonus in Phase 1, now the most expensive: needs lexer, grammar, parser, AST, type rules, scope rules, and a class-scope model with virtual dispatch | `src/clens/languages/java/` |
+| **LSP server** (D31) | Web UI already satisfies the §6.6 interface requirement, and `pygls` would break the zero-runtime-dependency property | `src/clens/lsp/` |
+| **Incremental re-parsing** (D21) | Full re-analysis per keystroke is fast enough at this file size; correctness beat latency | `web/server.py`'s `_build_model` |
+| **C preprocessor pass** | Directives are tokenized, never expanded. A real pass needs location mapping back to pre-expansion positions | before the lexer |
+| **Multi-file support** | Navigation already carries `file` fields; needs a translation-unit model and cross-file resolution | `languages/c/semantic.py` |
 
-| Phase 3 need | Phase 2 obligation |
-|---|---|
-| CFG built from statement structure | Statement nodes keep sub-statements as named fields. Already true; do not flatten |
-| Definite-assignment analysis | `Reference` records read vs write. Record it now — Phase 3 cannot recover the distinction |
-| Live-variable analysis | Same. Also why `is_used` must be accurate, not approximate |
-| Call graph | `CallExpr.callee_span` plus the resolved function `Symbol`. Store the resolution result on the symbol's `references`, not just as a local variable during checking |
-| Go-to-definition | `Symbol.definition_loc`, exact |
-| Find-all-references | `Symbol.references`, complete. Three features fail together if this is wrong |
-| Safe rename, scope-aware | Symbol identity anchored to node identity. Do not rebuild AST nodes during any pass — annotate in place |
-| Rename conflict and shadow checks | The scope tree surviving analysis (D19), and `lookup_with_scope` |
-| Hover with doc comments | Built in Phase 2 (S7). Phase 3 claims it |
-| Dead function detection | The call graph, built on resolved call references |
-| LSP server (optional bonus) | `core/queries.py` staying adapter-free (D23), and LSP-shaped diagnostics (D11) |
-| The required Phase 3 interface | The web UI (D22) already satisfies §6.6. Phase 3 extends it rather than starting one |
+## Do not implement any of these during Phase 3
 
-## Multi-language bonus (Java, at the very end)
+If a task appears to require one, you have misread it. Ask.
 
-Unchanged: `core/` never imports from `languages/`. Phase 2 splits the same way —
-generic machinery (`Type` bases, `Scope`, `Symbol`, queries) in `core/`, C-specific
-rules (conversion table, C scope kinds, C completion contexts) in `languages/c/`.
-
-Do **not** build a plugin registry or an abstract language interface now. One
-language, clean boundary.
-
-## What NOT to build in Phase 2
-
-Explicitly out, even if it seems easy while you are in the neighbourhood:
-
-- Control flow graphs, basic blocks
-- Call graphs
-- Data-flow analysis of any kind, including proper definite-assignment and liveness
-- Dead code detection
-- Go-to-definition, find-all-references
-- Rename refactoring
-- An LSP server
-- The Java language module
-- Incremental re-parsing (a listed bonus; D21 defers it)
-
-Hover (S7) is the one deliberate exception: it is a Phase 3 item built in Phase 2
-because it is the same query as completion `detail`.
+The one thing Phase 3 *does* take from this list is **reaching definitions** (task
+Q2.7) — it is one more configuration of the generic solver, roughly fifteen lines,
+and doing it while the machinery is fresh costs almost nothing.

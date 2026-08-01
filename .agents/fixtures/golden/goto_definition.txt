@@ -1,0 +1,14 @@
+# A4.4 — the response shape from course document section 6.3.
+# NOTE the key is "col", NOT "column". Phase 2's Diagnostic.to_dict() uses
+# "column"; these two specs differ and each is matched where it is specified.
+
+{
+  "symbol": "factorial",
+  "kind": "function",
+  "type": "(int) -> int",
+  "defined_at": { "file": "main.c", "line": 1, "col": 5 },
+  "references": [
+    { "file": "main.c", "line": 15, "col": 12 },
+    { "file": "main.c", "line": 16, "col": 24 }
+  ]
+}

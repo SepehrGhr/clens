@@ -1,0 +1,454 @@
+=== LAYOUT ===
+docs/architecture.md
+docs/first-follow.md
+docs/grammar.ebnf
+docs/images/web-ui-completion.png
+docs/images/web-ui-diagnostics.png
+docs/images/web-ui-hover.png
+docs/images/web-ui-overview.png
+docs/known-limitations.md
+docs/lexical-specification.md
+docs/semantic-analysis.md
+docs/team.md
+docs/testing.md
+docs/third-party.md
+docs/type-system.md
+src/clens/cli/__init__.py
+src/clens/cli/main.py
+src/clens/core/ast_nodes.py
+src/clens/core/ast_printer.py
+src/clens/core/diagnostics.py
+src/clens/core/highlight.py
+src/clens/core/__init__.py
+src/clens/core/lexer_base.py
+src/clens/core/parser_base.py
+src/clens/core/scopes.py
+src/clens/core/source.py
+src/clens/core/symbols.py
+src/clens/core/theme.py
+src/clens/core/token.py
+src/clens/core/types.py
+src/clens/core/visitor.py
+src/clens/__init__.py
+src/clens/languages/c/ast_nodes.py
+src/clens/languages/c/highlighter.py
+src/clens/languages/c/__init__.py
+src/clens/languages/c/keywords.py
+src/clens/languages/c/lexer.py
+src/clens/languages/c/parser.py
+src/clens/languages/c/queries.py
+src/clens/languages/c/resolver.py
+src/clens/languages/c/semantic.py
+src/clens/languages/c/token_rules.py
+src/clens/languages/c/typecheck.py
+src/clens/languages/c/usage.py
+src/clens/languages/__init__.py
+src/clens/render/ansi.py
+src/clens/render/html.py
+src/clens/render/__init__.py
+src/clens/web/__init__.py
+src/clens/web/renderer.py
+src/clens/web/server.py
+src/clens/web/static/app.js
+src/clens/web/static/index.html
+src/clens/web/static/style.css
+tests/conftest.py
+tests/fixtures/golden/completion_member.txt
+tests/fixtures/golden/factorial_ast.txt
+tests/fixtures/golden/factorial_tokens.txt
+tests/fixtures/golden/golden_four_diagnostics.txt
+tests/fixtures/golden/invalid_char.txt
+tests/fixtures/lexical-errors/invalid_char.c
+tests/fixtures/lexical-errors/unterminated_block_comment.c
+tests/fixtures/lexical-errors/unterminated_string.c
+tests/fixtures/semantic-errors/call_errors.c
+tests/fixtures/semantic-errors/duplicate_declaration.c
+tests/fixtures/semantic-errors/golden_four.c
+tests/fixtures/semantic-errors/init_and_unused.c
+tests/fixtures/semantic-errors/member_errors.c
+tests/fixtures/semantic-errors/return_errors.c
+tests/fixtures/semantic-errors/shadowing.c
+tests/fixtures/semantic-errors/undefined_symbol.c
+tests/fixtures/syntax-errors/missing_expression.c
+tests/fixtures/syntax-errors/missing_paren.c
+tests/fixtures/syntax-errors/unbalanced_braces.c
+tests/fixtures/syntax-errors/unsupported_typedef.c
+tests/fixtures/valid/call_vs_variable.c
+tests/fixtures/valid/comments_only.c
+tests/fixtures/valid/control_flow.c
+tests/fixtures/valid/doc_comments.c
+tests/fixtures/valid/empty.c
+tests/fixtures/valid/factorial.c
+tests/fixtures/valid/forward_reference.c
+tests/fixtures/valid/literals.c
+tests/fixtures/valid/member_completion.c
+tests/fixtures/valid/operators.c
+tests/fixtures/valid/scopes.c
+tests/fixtures/valid/structs.c
+tests/golden/expected/factorial.ansi.txt
+tests/golden/expected/factorial.html
+tests/golden/expected/golden_four.diagnostics.json
+tests/golden/__init__.py
+tests/golden/test_golden.py
+tests/unit/__init__.py
+tests/unit/test_ast_nodes_c.py
+tests/unit/test_ast_nodes.py
+tests/unit/test_ast_printer.py
+tests/unit/test_cli.py
+tests/unit/test_diagnostics.py
+tests/unit/test_diagnostics_thirteen_rows.py
+tests/unit/test_golden_four.py
+tests/unit/test_highlighter_acceptance.py
+tests/unit/test_highlighter_c.py
+tests/unit/test_highlight.py
+tests/unit/test_layering.py
+tests/unit/test_lexer_base.py
+tests/unit/test_lexer_c.py
+tests/unit/test_no_cascade.py
+tests/unit/test_parser_base.py
+tests/unit/test_parser_declarations.py
+tests/unit/test_parser_expressions.py
+tests/unit/test_parser_recovery.py
+tests/unit/test_parser_robustness.py
+tests/unit/test_parser_statements.py
+tests/unit/test_queries_completion_general.py
+tests/unit/test_queries_completion_member.py
+tests/unit/test_queries_context.py
+tests/unit/test_queries_hover.py
+tests/unit/test_queries_ranking.py
+tests/unit/test_render_ansi.py
+tests/unit/test_render_html.py
+tests/unit/test_resolver_diagnostics.py
+tests/unit/test_resolver_pass1.py
+tests/unit/test_resolver_pass2.py
+tests/unit/test_resolver_prototypes.py
+tests/unit/test_resolver_stage3_sweep.py
+tests/unit/test_robustness_e2e.py
+tests/unit/test_scaffold.py
+tests/unit/test_scopes.py
+tests/unit/test_semantic_model.py
+tests/unit/test_semantic_robustness.py
+tests/unit/test_source.py
+tests/unit/test_symbols.py
+tests/unit/test_theme.py
+tests/unit/test_token.py
+tests/unit/test_typecheck_all_valid_fixtures.py
+tests/unit/test_typecheck_assignment_and_return.py
+tests/unit/test_typecheck_member_and_calls.py
+tests/unit/test_typecheck.py
+tests/unit/test_types.py
+tests/unit/test_usage.py
+tests/unit/test_visitor.py
+tests/unit/test_web_renderer.py
+tests/unit/test_web_server.py
+
+=== PUBLIC API ===
+src/clens/cli/main.py:43:def build_parser() -> argparse.ArgumentParser:
+src/clens/cli/main.py:84:def _add_common_arguments(subparser: argparse.ArgumentParser) -> None:
+src/clens/cli/main.py:92:def _add_position_arguments(subparser: argparse.ArgumentParser) -> None:
+src/clens/cli/main.py:97:def main(argv: list[str] | None = None) -> int:
+src/clens/cli/main.py:108:def _run(args: argparse.Namespace) -> int:
+src/clens/cli/main.py:123:def _load_source(path_str: str, diagnostics: DiagnosticCollector) -> SourceFile | None:
+src/clens/cli/main.py:145:def _file_error(path_str: str, message: str) -> Diagnostic:
+src/clens/cli/main.py:157:def _report_load_failure(diagnostics: DiagnosticCollector, args: argparse.Namespace) -> None:
+src/clens/cli/main.py:164:def _write_output(text: str, args: argparse.Namespace) -> None:
+src/clens/cli/main.py:172:def _tokenize_and_parse(source: SourceFile, diagnostics: DiagnosticCollector):
+src/clens/cli/main.py:181:def _cmd_tokens(source: SourceFile, args: argparse.Namespace) -> tuple[str, DiagnosticCollector]:
+src/clens/cli/main.py:191:def _token_to_dict(token: Token) -> dict:
+src/clens/cli/main.py:202:def _cmd_ast(source: SourceFile, args: argparse.Namespace) -> tuple[str, DiagnosticCollector]:
+src/clens/cli/main.py:210:def _to_jsonable(value: object) -> object:
+src/clens/cli/main.py:231:def _cmd_highlight(source: SourceFile, args: argparse.Namespace) -> tuple[str, DiagnosticCollector]:
+src/clens/cli/main.py:246:def _cmd_check(source: SourceFile, args: argparse.Namespace) -> tuple[str, DiagnosticCollector]:
+src/clens/cli/main.py:257:def _cmd_symbols(source: SourceFile, args: argparse.Namespace) -> tuple[str, DiagnosticCollector]:
+src/clens/cli/main.py:266:def _render_scope(scope: Scope, depth: int) -> list[str]:
+src/clens/cli/main.py:276:def _cmd_complete(source: SourceFile, args: argparse.Namespace) -> tuple[str, DiagnosticCollector]:
+src/clens/cli/main.py:287:def _cmd_hover(source: SourceFile, args: argparse.Namespace) -> tuple[str, DiagnosticCollector]:
+src/clens/cli/main.py:298:def _offset_for(
+src/clens/cli/main.py:314:def _position_error_output(diagnostics: DiagnosticCollector, args: argparse.Namespace) -> str:
+src/clens/cli/main.py:321:def _position_output(
+src/clens/cli/main.py:338:def _position_result_to_jsonable(result: list[CompletionItem] | HoverInfo | None) -> object:
+src/clens/cli/main.py:353:def _cmd_serve(args: argparse.Namespace) -> int:
+src/clens/core/ast_nodes.py:22:@dataclass(slots=True)
+src/clens/core/ast_nodes.py:23:class Node:
+src/clens/core/ast_nodes.py:43:@dataclass(slots=True)
+src/clens/core/ast_nodes.py:44:class Expr(Node):
+src/clens/core/ast_nodes.py:56:@dataclass(slots=True)
+src/clens/core/ast_nodes.py:57:class Stmt(Node):
+src/clens/core/ast_nodes.py:61:@dataclass(slots=True)
+src/clens/core/ast_nodes.py:62:class Decl(Node):
+src/clens/core/ast_nodes.py:66:@dataclass(slots=True)
+src/clens/core/ast_nodes.py:67:class ErrorExpr(Expr):
+src/clens/core/ast_nodes.py:80:@dataclass(slots=True)
+src/clens/core/ast_nodes.py:81:class ErrorStmt(Stmt):
+src/clens/core/ast_nodes.py:92:def join(start: Span, end: Span) -> Span:
+src/clens/core/ast_printer.py:31:def _inline_repr(node: Node) -> str:
+src/clens/core/ast_printer.py:41:def _child_entries(node: Node) -> list[tuple[str, Node]]:
+src/clens/core/ast_printer.py:57:def _render_children(node: Node, indent: int) -> list[str]:
+src/clens/core/ast_printer.py:71:def format_ast(root: Node) -> str:
+src/clens/core/diagnostics.py:20:class Severity(Enum):
+src/clens/core/diagnostics.py:29:@dataclass(slots=True, frozen=True)
+src/clens/core/diagnostics.py:30:class Position:
+src/clens/core/diagnostics.py:38:@dataclass(slots=True)
+src/clens/core/diagnostics.py:39:class Diagnostic:
+src/clens/core/diagnostics.py:68:@dataclass(slots=True)
+src/clens/core/diagnostics.py:69:class DiagnosticCollector:
+src/clens/core/diagnostics.py:112:def _format_one(diagnostic: Diagnostic, source: SourceFile) -> str:
+src/clens/core/diagnostics.py:127:def diagnostic_from_span(
+src/clens/core/diagnostics.py:153:class SemanticCode:
+src/clens/core/highlight.py:13:class Category(Enum):
+src/clens/core/lexer_base.py:21:@dataclass(frozen=True, slots=True)
+src/clens/core/lexer_base.py:22:class TokenRule:
+src/clens/core/lexer_base.py:46:def compile_master_regex(rules: Sequence[TokenRule]) -> re.Pattern[str]:
+src/clens/core/lexer_base.py:58:class LexerEngine:
+src/clens/core/parser_base.py:22:class ParseError(Exception):
+src/clens/core/parser_base.py:29:class ParserBase:
+src/clens/core/scopes.py:20:class ScopeKind(Enum):
+src/clens/core/scopes.py:32:@dataclass(slots=True)
+src/clens/core/scopes.py:33:class Scope:
+src/clens/core/scopes.py:94:def scope_at(root: Scope, offset: int) -> Scope:
+src/clens/core/scopes.py:113:def symbols_visible_at(root: Scope, offset: int) -> list[Symbol]:
+src/clens/core/source.py:13:def _compute_line_starts(text: str) -> list[int]:
+src/clens/core/source.py:27:def _strip_line_terminator(raw: str) -> str:
+src/clens/core/source.py:36:@dataclass(slots=True)
+src/clens/core/source.py:37:class SourceFile:
+src/clens/core/symbols.py:24:class SymbolKind(Enum):
+src/clens/core/symbols.py:35:@dataclass(slots=True, frozen=True)
+src/clens/core/symbols.py:36:class Reference:
+src/clens/core/symbols.py:47:@dataclass(slots=True)
+src/clens/core/symbols.py:48:class Symbol:
+src/clens/core/theme.py:24:@dataclass(frozen=True, slots=True)
+src/clens/core/theme.py:25:class Style:
+src/clens/core/token.py:15:class TokenType(Enum):
+src/clens/core/token.py:39:@dataclass(slots=True, frozen=True)
+src/clens/core/token.py:40:class Span:
+src/clens/core/token.py:52:@dataclass(slots=True)
+src/clens/core/token.py:53:class Token:
+src/clens/core/token.py:75:def iter_significant(tokens: Iterable[Token]) -> Iterator[Token]:
+src/clens/core/types.py:37:@dataclass(frozen=True, slots=True)
+src/clens/core/types.py:38:class Type:
+src/clens/core/types.py:45:@dataclass(frozen=True, slots=True)
+src/clens/core/types.py:46:class PrimitiveType(Type):
+src/clens/core/types.py:56:@dataclass(frozen=True, slots=True)
+src/clens/core/types.py:57:class PointerType(Type):
+src/clens/core/types.py:66:@dataclass(frozen=True, slots=True)
+src/clens/core/types.py:67:class ArrayType(Type):
+src/clens/core/types.py:79:@dataclass(frozen=True, slots=True)
+src/clens/core/types.py:80:class StructType(Type):
+src/clens/core/types.py:94:@dataclass(frozen=True, slots=True)
+src/clens/core/types.py:95:class FunctionType(Type):
+src/clens/core/types.py:107:@dataclass(frozen=True, slots=True)
+src/clens/core/types.py:108:class UnknownType(Type):
+src/clens/core/types.py:123:def usual_arithmetic_conversion(a: Type, b: Type) -> Type:
+src/clens/core/types.py:144:class AssignResult(Enum):
+src/clens/core/types.py:153:def is_assignable(target: Type, source: Type) -> AssignResult:
+src/clens/core/visitor.py:19:def iter_child_nodes(node: Node) -> Iterator[Node]:
+src/clens/core/visitor.py:37:class NodeVisitor:
+src/clens/core/visitor.py:52:def walk(node: Node) -> Iterator[Node]:
+src/clens/languages/c/ast_nodes.py:63:@dataclass(slots=True, kw_only=True)
+src/clens/languages/c/ast_nodes.py:64:class TypeSpec(Node):
+src/clens/languages/c/ast_nodes.py:89:@dataclass(slots=True, kw_only=True)
+src/clens/languages/c/ast_nodes.py:90:class Field(Node):
+src/clens/languages/c/ast_nodes.py:102:@dataclass(slots=True, kw_only=True)
+src/clens/languages/c/ast_nodes.py:103:class Program(Node):
+src/clens/languages/c/ast_nodes.py:112:@dataclass(slots=True, kw_only=True)
+src/clens/languages/c/ast_nodes.py:113:class FuncDecl(Decl):
+src/clens/languages/c/ast_nodes.py:126:@dataclass(slots=True, kw_only=True)
+src/clens/languages/c/ast_nodes.py:127:class Param(Decl):
+src/clens/languages/c/ast_nodes.py:139:@dataclass(slots=True, kw_only=True)
+src/clens/languages/c/ast_nodes.py:140:class VarDecl(Decl):
+src/clens/languages/c/ast_nodes.py:155:@dataclass(slots=True, kw_only=True)
+src/clens/languages/c/ast_nodes.py:156:class StructDecl(Decl):
+src/clens/languages/c/ast_nodes.py:169:@dataclass(slots=True, kw_only=True)
+src/clens/languages/c/ast_nodes.py:170:class Block(Stmt):
+src/clens/languages/c/ast_nodes.py:178:@dataclass(slots=True, kw_only=True)
+src/clens/languages/c/ast_nodes.py:179:class IfStmt(Stmt):
+src/clens/languages/c/ast_nodes.py:185:@dataclass(slots=True, kw_only=True)
+src/clens/languages/c/ast_nodes.py:186:class WhileStmt(Stmt):
+src/clens/languages/c/ast_nodes.py:191:@dataclass(slots=True, kw_only=True)
+src/clens/languages/c/ast_nodes.py:192:class ForStmt(Stmt):
+src/clens/languages/c/ast_nodes.py:201:@dataclass(slots=True, kw_only=True)
+src/clens/languages/c/ast_nodes.py:202:class ReturnStmt(Stmt):
+src/clens/languages/c/ast_nodes.py:206:@dataclass(slots=True, kw_only=True)
+src/clens/languages/c/ast_nodes.py:207:class BreakStmt(Stmt):
+src/clens/languages/c/ast_nodes.py:211:@dataclass(slots=True, kw_only=True)
+src/clens/languages/c/ast_nodes.py:212:class ContinueStmt(Stmt):
+src/clens/languages/c/ast_nodes.py:216:@dataclass(slots=True, kw_only=True)
+src/clens/languages/c/ast_nodes.py:217:class ExprStmt(Stmt):
+src/clens/languages/c/ast_nodes.py:221:@dataclass(slots=True, kw_only=True)
+src/clens/languages/c/ast_nodes.py:222:class EmptyStmt(Stmt):
+src/clens/languages/c/ast_nodes.py:229:@dataclass(slots=True, kw_only=True)
+src/clens/languages/c/ast_nodes.py:230:class Identifier(Expr):
+src/clens/languages/c/ast_nodes.py:237:@dataclass(slots=True, kw_only=True)
+src/clens/languages/c/ast_nodes.py:238:class IntLiteral(Expr):
+src/clens/languages/c/ast_nodes.py:245:@dataclass(slots=True, kw_only=True)
+src/clens/languages/c/ast_nodes.py:246:class FloatLiteral(Expr):
+src/clens/languages/c/ast_nodes.py:253:@dataclass(slots=True, kw_only=True)
+src/clens/languages/c/ast_nodes.py:254:class StringLiteral(Expr):
+src/clens/languages/c/ast_nodes.py:261:@dataclass(slots=True, kw_only=True)
+src/clens/languages/c/ast_nodes.py:262:class CharLiteral(Expr):
+src/clens/languages/c/ast_nodes.py:269:@dataclass(slots=True, kw_only=True)
+src/clens/languages/c/ast_nodes.py:270:class BinaryExpr(Expr):
+src/clens/languages/c/ast_nodes.py:278:@dataclass(slots=True, kw_only=True)
+src/clens/languages/c/ast_nodes.py:279:class UnaryExpr(Expr):
+src/clens/languages/c/ast_nodes.py:292:@dataclass(slots=True, kw_only=True)
+src/clens/languages/c/ast_nodes.py:293:class AssignExpr(Expr):
+src/clens/languages/c/ast_nodes.py:301:@dataclass(slots=True, kw_only=True)
+src/clens/languages/c/ast_nodes.py:302:class TernaryExpr(Expr):
+src/clens/languages/c/ast_nodes.py:308:@dataclass(slots=True, kw_only=True)
+src/clens/languages/c/ast_nodes.py:309:class CallExpr(Expr):
+src/clens/languages/c/ast_nodes.py:318:@dataclass(slots=True, kw_only=True)
+src/clens/languages/c/ast_nodes.py:319:class IndexExpr(Expr):
+src/clens/languages/c/ast_nodes.py:326:@dataclass(slots=True, kw_only=True)
+src/clens/languages/c/ast_nodes.py:327:class MemberExpr(Expr):
+src/clens/languages/c/ast_nodes.py:338:@dataclass(slots=True, kw_only=True)
+src/clens/languages/c/ast_nodes.py:339:class SizeofExpr(Expr):
+src/clens/languages/c/highlighter.py:28:def highlight(tokens: list[Token], program: ast.Program) -> HighlightMap:
+src/clens/languages/c/highlighter.py:45:def _default_categories(tokens: list[Token]) -> HighlightMap:
+src/clens/languages/c/highlighter.py:55:def _default_category(token: Token) -> Category | None:
+src/clens/languages/c/highlighter.py:77:class _UpgradeVisitor(NodeVisitor):
+src/clens/languages/c/lexer.py:15:def _retype_keywords(lexeme: str, token_type: TokenType) -> TokenType:
+src/clens/languages/c/lexer.py:25:def tokenize(source: SourceFile, diagnostics: DiagnosticCollector) -> list[Token]:
+src/clens/languages/c/parser.py:60:def _is_type_start(token: Token) -> bool:
+src/clens/languages/c/parser.py:64:def _parse_int_literal(lexeme: str) -> int:
+src/clens/languages/c/parser.py:75:def _parse_float_literal(lexeme: str) -> float:
+src/clens/languages/c/parser.py:79:def _unquote(lexeme: str, quote: str) -> str:
+src/clens/languages/c/parser.py:89:class Parser(ParserBase):
+src/clens/languages/c/parser.py:655:def parse(source: SourceFile, diagnostics: DiagnosticCollector) -> ast.Program:
+src/clens/languages/c/queries.py:62:@dataclass(slots=True, frozen=True)
+src/clens/languages/c/queries.py:63:class CompletionItem:
+src/clens/languages/c/queries.py:75:@dataclass(slots=True, frozen=True)
+src/clens/languages/c/queries.py:76:class HoverInfo:
+src/clens/languages/c/queries.py:85:def symbols_of(model: SemanticModel) -> list[Symbol]:
+src/clens/languages/c/queries.py:90:def scope_to_dict(scope: Scope) -> dict:
+src/clens/languages/c/queries.py:102:def symbol_to_dict(symbol: Symbol) -> dict:
+src/clens/languages/c/queries.py:114:def diagnostics_of(model: SemanticModel) -> list[Diagnostic]:
+src/clens/languages/c/queries.py:122:def completions_at(model: SemanticModel, offset: int) -> list[CompletionItem]:
+src/clens/languages/c/queries.py:142:def _member_completions(
+src/clens/languages/c/queries.py:160:def _general_completions(
+src/clens/languages/c/queries.py:182:def _finalize(ranked: list[tuple]) -> list[CompletionItem]:
+src/clens/languages/c/queries.py:190:def _completion_item(symbol: Symbol) -> CompletionItem:
+src/clens/languages/c/queries.py:199:def _match_rank(label: str, prefix: str) -> int | None:
+src/clens/languages/c/queries.py:212:def _is_subsequence(needle: str, haystack: str) -> bool:
+src/clens/languages/c/queries.py:217:def _scope_distance(from_scope: Scope, to_scope: Scope) -> int:
+src/clens/languages/c/queries.py:234:def _cursor_context(tokens: list[Token], offset: int) -> tuple[str | None, Token | None]:
+src/clens/languages/c/queries.py:255:def _last_significant_before(tokens: list[Token], offset: int) -> Token | None:
+src/clens/languages/c/queries.py:266:def _is_member_operator(token: Token) -> bool:
+src/clens/languages/c/queries.py:270:def _resolve_member_base(model: SemanticModel, dot_token: Token) -> Type | None:
+src/clens/languages/c/queries.py:290:def _struct_scope(model: SemanticModel, struct_type: StructType) -> Scope | None:
+src/clens/languages/c/queries.py:304:def _expected_argument_type(model: SemanticModel, offset: int) -> Type | None:
+src/clens/languages/c/queries.py:323:def _enclosing_call(tokens: list[Token], offset: int) -> tuple[str, int] | None:
+src/clens/languages/c/queries.py:360:def hover_at(model: SemanticModel, offset: int) -> HoverInfo | None:
+src/clens/languages/c/queries.py:376:def _hover_member(model: SemanticModel, dot_token: Token, field_token: Token) -> HoverInfo | None:
+src/clens/languages/c/queries.py:389:def _hover_for_symbol(model: SemanticModel, symbol: Symbol) -> HoverInfo:
+src/clens/languages/c/queries.py:401:def _identifier_token_at(tokens: list[Token], offset: int) -> Token | None:
+src/clens/languages/c/queries.py:408:def _scope_description(scope: Scope) -> str:
+src/clens/languages/c/queries.py:430:def _doc_comment(model: SemanticModel, symbol: Symbol) -> str | None:
+src/clens/languages/c/queries.py:435:def _decl_span_start(model: SemanticModel, symbol: Symbol) -> int:
+src/clens/languages/c/queries.py:445:def _preceding_comment_block(tokens: list[Token], decl_start: int) -> str | None:
+src/clens/languages/c/queries.py:466:def _strip_line_comment(lexeme: str) -> str:
+src/clens/languages/c/queries.py:470:def _strip_block_comment(lexeme: str) -> str:
+src/clens/languages/c/resolver.py:29:def scan_declarations(
+src/clens/languages/c/resolver.py:40:def resolve(
+src/clens/languages/c/resolver.py:53:def _index_by_name(all_scopes: list[Scope]) -> dict[str, list[Symbol]]:
+src/clens/languages/c/resolver.py:61:class _ResolverBase:
+src/clens/languages/c/resolver.py:127:class _Pass1(_ResolverBase):
+src/clens/languages/c/resolver.py:249:class _Pass2(_ResolverBase):
+src/clens/languages/c/resolver.py:485:def _array_size(expr: ast.Expr | None) -> int | None:
+src/clens/languages/c/semantic.py:31:@dataclass(slots=True)
+src/clens/languages/c/semantic.py:32:class SemanticModel:
+src/clens/languages/c/semantic.py:52:def analyze(
+src/clens/languages/c/typecheck.py:45:class _HasType(Protocol):
+src/clens/languages/c/typecheck.py:55:class _ScopeLike(Protocol):
+src/clens/languages/c/typecheck.py:64:def resolve_type_spec(spec: TypeSpec, scope: _ScopeLike) -> Type:
+src/clens/languages/c/typecheck.py:84:def _resolve_base(spec: TypeSpec, scope: _ScopeLike) -> Type:
+src/clens/languages/c/typecheck.py:101:def type_check(model: SemanticModel, source: SourceFile, diagnostics: DiagnosticCollector) -> None:
+src/clens/languages/c/typecheck.py:109:class _TypeChecker:
+src/clens/languages/c/typecheck.py:452:def _is_numeric(t: Type) -> bool:
+src/clens/languages/c/typecheck.py:456:def _is_integral(t: Type) -> bool:
+src/clens/languages/c/usage.py:31:def check_usage(model: SemanticModel, diagnostics: DiagnosticCollector) -> None:
+src/clens/languages/c/usage.py:46:def _check_unused(symbol: Symbol, model: SemanticModel, diagnostics: DiagnosticCollector) -> None:
+src/clens/languages/c/usage.py:65:def _check_use_before_init(
+src/clens/render/ansi.py:16:def render_ansi(source: SourceFile, tokens: list[Token], highlight_map: HighlightMap) -> str:
+src/clens/render/html.py:21:def render_html(
+src/clens/render/html.py:60:def _escape_html(text: str) -> str:
+src/clens/render/html.py:66:def _build_css() -> str:
+src/clens/web/renderer.py:22:def render_interactive(source: SourceFile, tokens: list[Token], highlight_map: HighlightMap) -> str:
+src/clens/web/renderer.py:42:def generate_theme_css() -> str:
+src/clens/web/renderer.py:54:def _escape_html(text: str) -> str:
+src/clens/web/server.py:47:def _build_model(text: str):
+src/clens/web/server.py:60:def handle_analyze(body: dict[str, Any]) -> dict[str, Any]:
+src/clens/web/server.py:72:def handle_complete(body: dict[str, Any]) -> dict[str, Any]:
+src/clens/web/server.py:86:def handle_hover(body: dict[str, Any]) -> dict[str, Any]:
+src/clens/web/server.py:103:def _offset_and_model(body: dict[str, Any]):
+src/clens/web/server.py:128:def dispatch_post(path: str, raw_body: bytes) -> tuple[dict[str, Any], int]:
+src/clens/web/server.py:150:class ClensRequestHandler(BaseHTTPRequestHandler):
+src/clens/web/server.py:203:def serve(host: str = "127.0.0.1", port: int = 8000) -> None:
+
+=== COMMITS ===
+54c2100 chore(agents): walk phase2-acceptance checklist, tick everything verified
+2cd8601 test: sweep every valid fixture for a non-None type_annotation
+99753b1 test: cover the forward-local-reference contrast explicitly
+12e45c1 test: exercise analyze() directly against phase2-acceptance's robustness list
+9bd192b test: pin the --json diagnostics shape with a golden file
+39a6b1d test(web): cover ClensRequestHandler over real sockets
+24f6619 docs: update README, architecture.md, and testing.md for Phase 2
+1e1ccbd docs: append Phase 2 entries to known-limitations.md
+6af73fc docs: add docs/type-system.md
+514eb10 docs: add docs/semantic-analysis.md
+c57efc2 docs(web): add the four Web UI screenshots to the README
+4e948d9 chore(agents): record P7.7 as blocked, not done
+5bb3e0c feat(cli): add clens serve command
+cb94e79 feat(web): build the front end - editor, panels, hover, completion
+831345d feat(web): add the stdlib HTTP backend
+4dbcd5a feat(web): add the interactive HTML renderer
+2be0c13 feat(cli): add clens complete and clens hover commands
+34b1c0d feat(cli): run semantic analysis in clens check
+ea9e40c fix(parser): give parser diagnostics real codes; audit all 13 rows
+f3fa05e feat(c): add S6.3's crude use-before-init and unused-variable checks
+607ab58 test(c): cover hover for every symbol kind and doc-comment shape
+a9897b5 test(c): cover D24's completion ranking rules in isolation
+99d5a7b test(c): cover general and argument-list completion
+cafa3ab feat(c): add the query layer - context detection and member completion
+e470b89 test(c): no-cascade through the full type-checking pass
+47934fd test(c): add the S4.7 golden four examples as one test file
+09f1cf6 feat(c): add the S4 type-checking pass
+cf0d5f8 feat(cli): add clens symbols command
+ede3a71 feat(c): add analyze() entry point
+3e434c0 test(c): close out Stage 3's comprehensive test sweep
+d3f355d test(c): cover prototype-vs-definition merge and mismatch
+f49bc57 test(c): audit undefined/duplicate/shadowing against the real fixtures
+a05829d feat(c): add name resolution Pass 2 (scope construction + references)
+e604081 feat(c): add name resolution Pass 1 (declaration scan)
+273fd7b test(core): cover the FOR_INIT scope shape
+fa963ab feat(c): add SemanticModel
+abe0a24 feat(core): add scope_at and symbols_visible_at
+610ccef feat(core): add Scope and ScopeKind
+cb32a66 feat(core): add Symbol, SymbolKind, and Reference
+d50a5a6 test(core): close out Stage 1's Type-system test gaps
+892d2e2 feat(core): wire Expr.type_annotation to the real Type
+2bee2cd feat(c): add resolve_type_spec
+c3493a8 feat(core): add is_assignable and AssignResult
+943e329 feat(core): add the numeric conversion rank table
+b4bc7df feat(core): add the semantic Type hierarchy
+5a3c7c0 feat(core): add diagnostic_from_span and the SEMANTIC code registry
+605a162 feat(ast): add CallExpr.callee_span
+b31078c feat(ast): add MemberExpr.member_span
+1d253b8 chore(agents): tick P0.1/P0.2 in phase2-plan
+0b3349f chore(agents): add phase 2 environment, update rules and future-phase hooks
+6eaf52f chore: walk phase1 acceptance checklist, tick everything verified
+638bd53 feat(parser): make ErrorExpr genuinely reachable, not just defined
+01980af refactor(parser): one function per grammar non-terminal, named to match
+3d3355f test: add comprehensive R9.5 end-to-end robustness sweep
+be6a9c9 chore: tick T6.6-T6.7 in phase1 plan, Stage 6 complete
+dc194f5 test: close remaining coverage gaps to 99.84%
+f6375e1 docs: write full README with pipeline diagram and real CLI output
+72c24d5 chore: tick T6.3-T6.5 in phase1 plan
+8eb04e5 docs: add testing.md and team.md (team split pending real names)
+545415f docs: add architecture.md and known-limitations.md
+
+=== COVERAGE ===
+src/clens/web/renderer.py                 21      0   100%
+src/clens/web/server.py                  114      7    94%
+----------------------------------------------------------
+TOTAL                                   2581     63    98%
+============================= 637 passed in 35.37s =============================

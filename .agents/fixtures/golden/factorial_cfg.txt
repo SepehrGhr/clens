@@ -1,0 +1,24 @@
+# Course document section 6.1 — golden CFG for tests/fixtures/valid/factorial.c
+#
+#   int factorial(int n) {
+#       if (n <= 1) return 1;
+#       return n * factorial(n - 1);
+#   }
+
+ENTRY
+  -> B1
+
+B1: evaluate n <= 1
+  --true-->  B2
+  --false--> B3
+
+B2: return 1
+  -> EXIT
+
+B3: return n * factorial(n-1)
+  -> EXIT
+
+EXIT
+
+# Assert: 5 blocks (ENTRY, B1, B2, B3, EXIT); the two labelled edges out of B1;
+# both returns flowing to a single EXIT.

@@ -2,25 +2,29 @@
 
 Agent instructions for this repository live in **`.agents/`**.
 
-Read `.agents/AGENTS.md` first, then `.agents/project/07-phase1-interfaces.md`,
-then `.agents/tasks/phase2-plan.md`.
+Read `.agents/AGENTS.md` first, then `.agents/project/10-phase2-interfaces.md`,
+then `.agents/tasks/phase3-plan.md`.
 
 Quick facts:
 - Project: **c-lens** — compiler front-end and IDE feature set for a subset of C.
-- **Phase 1 is complete and delivered.** Current scope: **Phase 2** — semantic
-  analysis, symbol table, type system, intellisense, and the web UI.
-- Language: Python 3.11+, zero runtime dependencies (the web UI uses stdlib
-  `http.server` and vanilla JavaScript specifically to keep it that way).
-- Reference clone at `../pycparser` — read
-  `.agents/skills/pycparser-reference/SKILL.md` before opening it. Note it does no
-  semantic analysis at all, so it is far less useful in Phase 2 than in Phase 1.
+- **Phases 1 and 2 are complete and delivered.** Current scope: **Phase 3** —
+  control flow graphs, data-flow analysis, call graph, navigation, safe rename,
+  dead code detection, and the bonus/future-work documentation.
+- Language: Python 3.11+, **zero runtime dependencies** — this is stated in the
+  README and is load-bearing. Graph rendering is hand-emitted SVG for this reason.
 
-Five rules that override anything else:
+Six rules that override anything else:
 1. The tool must never crash on any input. Errors become diagnostics.
-2. Phase 1 stays green. `.agents/checklists/phase1-acceptance.md` is a regression
-   gate. In particular `clens highlight --format html` must keep producing
-   byte-identical, JavaScript-free output — the web UI is a *separate* renderer.
-3. Do not implement Phase 3 features (CFG, call graph, data-flow, rename,
-   go-to-definition, find-all-references). Hover is the one deliberate exception.
-4. One diagnostic per root cause. No cascading error floods.
-5. Never credit yourself in a commit message, comment, or document.
+2. Phases 1 and 2 stay green. Both acceptance checklists are regression gates.
+   `clens highlight --format html` must stay byte-identical and JavaScript-free.
+3. Rename by symbol identity, never by text substitution — the course document
+   assigns zero credit to a string-replacement rename.
+4. No new runtime dependencies. No Graphviz, no networkx, no JS graph library,
+   no pygls.
+5. Reuse Phase 2's recorded data (`Reference.is_read`/`is_write`,
+   `Symbol.references`, `definition_loc`) rather than re-deriving it from the AST.
+6. Never credit yourself in a commit message, comment, or document.
+
+Two documentation deliverables carry real weight and are easy to forget:
+`docs/bonus/` (one four-section file per bonus, including retroactive write-ups for
+Docker, CI/CD, the test suite, and the Web UI) and `docs/future-work.md`.
