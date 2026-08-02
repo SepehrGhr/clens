@@ -214,6 +214,7 @@ See [`docs/bonus/web-ui.md`](docs/bonus/web-ui.md) for the full writeup.
 
 | Doc | Contents |
 |---|---|
+| [`docs/demo.md`](docs/demo.md) | Every command, with a real example and real output for each — a full feature tour |
 | [`docs/architecture.md`](docs/architecture.md) | Pipeline, module map, parsing-strategy justification, data structures |
 | [`docs/grammar.ebnf`](docs/grammar.ebnf) | The complete EBNF for the implemented C subset |
 | [`docs/first-follow.md`](docs/first-follow.md) | FIRST/FOLLOW sets and the documented ambiguity resolutions |

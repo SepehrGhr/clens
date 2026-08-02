@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="580" height="820" viewBox="0 0 580 820" font-family="monospace">
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#C0C0C0" /></marker></defs>
+<rect width="100%" height="100%" fill="#1e1e1e" />
+<line x1="290.0" y1="75.0" x2="290.0" y2="115.0" stroke="#C0C0C0" stroke-width="2" marker-end="url(#arrow)" />
+<line x1="290.0" y1="165.0" x2="290.0" y2="205.0" stroke="#C0C0C0" stroke-width="2" marker-end="url(#arrow)" />
+<line x1="290.0" y1="255.0" x2="210.0" y2="295.0" stroke="#3FB950" stroke-width="2" marker-end="url(#arrow)" /><text x="250.0" y="271.0" font-size="10" fill="#3FB950" text-anchor="middle">true</text>
+<line x1="290.0" y1="255.0" x2="370.0" y2="295.0" stroke="#F44747" stroke-width="2" marker-end="url(#arrow)" /><text x="330.0" y="271.0" font-size="10" fill="#F44747" text-anchor="middle">false</text>
+<line x1="210.0" y1="345.0" x2="130.0" y2="385.0" stroke="#3FB950" stroke-width="2" marker-end="url(#arrow)" /><text x="170.0" y="361.0" font-size="10" fill="#3FB950" text-anchor="middle">true</text>
+<line x1="210.0" y1="345.0" x2="290.0" y2="385.0" stroke="#F44747" stroke-width="2" marker-end="url(#arrow)" /><text x="250.0" y="361.0" font-size="10" fill="#F44747" text-anchor="middle">false</text>
+<line x1="370.0" y1="345.0" x2="450.0" y2="385.0" stroke="#C0C0C0" stroke-width="2" marker-end="url(#arrow)" />
+<path d="M 130.0 410.0 C 60.0 410.0, 60.0 230.0, 290.0 230.0" fill="none" stroke="#C0C0C0" stroke-width="2" marker-end="url(#arrow)" /><text x="210.0" y="316.0" font-size="10" fill="#C0C0C0" text-anchor="middle">back</text>
+<line x1="290.0" y1="435.0" x2="210.0" y2="475.0" stroke="#3FB950" stroke-width="2" marker-end="url(#arrow)" /><text x="250.0" y="451.0" font-size="10" fill="#3FB950" text-anchor="middle">true</text>
+<line x1="290.0" y1="435.0" x2="370.0" y2="475.0" stroke="#F44747" stroke-width="2" marker-end="url(#arrow)" /><text x="330.0" y="451.0" font-size="10" fill="#F44747" text-anchor="middle">false</text>
+<path d="M 210.0 500.0 C 140.0 500.0, 140.0 320.0, 370.0 320.0" fill="none" stroke="#C0C0C0" stroke-width="2" marker-end="url(#arrow)" />
+<line x1="370.0" y1="525.0" x2="290.0" y2="565.0" stroke="#C0C0C0" stroke-width="2" marker-end="url(#arrow)" />
+<line x1="290.0" y1="615.0" x2="210.0" y2="655.0" stroke="#3FB950" stroke-width="2" marker-end="url(#arrow)" /><text x="250.0" y="631.0" font-size="10" fill="#3FB950" text-anchor="middle">true</text>
+<line x1="290.0" y1="615.0" x2="370.0" y2="655.0" stroke="#F44747" stroke-width="2" marker-end="url(#arrow)" /><text x="330.0" y="631.0" font-size="10" fill="#F44747" text-anchor="middle">false</text>
+<line x1="210.0" y1="705.0" x2="290.0" y2="745.0" stroke="#C0C0C0" stroke-width="2" marker-end="url(#arrow)" />
+<path d="M 370.0 680.0 C 220.0 680.0, 220.0 230.0, 290.0 230.0" fill="none" stroke="#C0C0C0" stroke-width="2" marker-end="url(#arrow)" /><text x="330.0" y="451.0" font-size="10" fill="#C0C0C0" text-anchor="middle">back</text>
+<path d="M 290.0 770.0 C 220.0 770.0, 220.0 590.0, 290.0 590.0" fill="none" stroke="#C0C0C0" stroke-width="2" marker-end="url(#arrow)" /><text x="290.0" y="676.0" font-size="10" fill="#C0C0C0" text-anchor="middle">back</text>
+<g id="node-ENTRY"><rect x="215.0" y="25.0" width="150" height="50" rx="8" fill="#2d2d2d" stroke="#569CD6" stroke-width="2" /><text text-anchor="middle" font-size="11" fill="#D4D4D4"><tspan x="290.0" y="50.0">ENTRY</tspan></text></g>
+<g id="node-B1"><rect x="215.0" y="115.0" width="150" height="50" rx="8" fill="#2d2d2d" stroke="#DCDCAA" stroke-width="2" /><text text-anchor="middle" font-size="11" fill="#D4D4D4"><tspan x="290.0" y="133.0">B1</tspan><tspan x="290.0" y="147.0">int total = 0</tspan></text></g>
+<g id="node-B2"><rect x="215.0" y="205.0" width="150" height="50" rx="8" fill="#2d2d2d" stroke="#DCDCAA" stroke-width="2" /><text text-anchor="middle" font-size="11" fill="#D4D4D4"><tspan x="290.0" y="223.0">B2</tspan><tspan x="290.0" y="237.0">n &gt; 0</tspan></text></g>
+<g id="node-B3"><rect x="135.0" y="295.0" width="150" height="50" rx="8" fill="#2d2d2d" stroke="#DCDCAA" stroke-width="2" /><text text-anchor="middle" font-size="11" fill="#D4D4D4"><tspan x="210.0" y="313.0">B3</tspan><tspan x="210.0" y="327.0">n == 3</tspan></text></g>
+<g id="node-B4"><rect x="295.0" y="295.0" width="150" height="50" rx="8" fill="#2d2d2d" stroke="#DCDCAA" stroke-width="2" /><text text-anchor="middle" font-size="11" fill="#D4D4D4"><tspan x="370.0" y="313.0">B4</tspan><tspan x="370.0" y="327.0">return total</tspan></text></g>
+<g id="node-B5"><rect x="55.0" y="385.0" width="150" height="50" rx="8" fill="#2d2d2d" stroke="#DCDCAA" stroke-width="2" /><text text-anchor="middle" font-size="11" fill="#D4D4D4"><tspan x="130.0" y="396.0">B5</tspan><tspan x="130.0" y="410.0">n = n - 1</tspan><tspan x="130.0" y="424.0">continue</tspan></text></g>
+<g id="node-B6"><rect x="215.0" y="385.0" width="150" height="50" rx="8" fill="#2d2d2d" stroke="#DCDCAA" stroke-width="2" /><text text-anchor="middle" font-size="11" fill="#D4D4D4"><tspan x="290.0" y="403.0">B6</tspan><tspan x="290.0" y="417.0">n == 7</tspan></text></g>
+<g id="node-EXIT"><rect x="375.0" y="385.0" width="150" height="50" rx="8" fill="#2d2d2d" stroke="#569CD6" stroke-width="2" /><text text-anchor="middle" font-size="11" fill="#D4D4D4"><tspan x="450.0" y="410.0">EXIT</tspan></text></g>
+<g id="node-B7"><rect x="135.0" y="475.0" width="150" height="50" rx="8" fill="#2d2d2d" stroke="#DCDCAA" stroke-width="2" /><text text-anchor="middle" font-size="11" fill="#D4D4D4"><tspan x="210.0" y="493.0">B7</tspan><tspan x="210.0" y="507.0">break</tspan></text></g>
+<g id="node-B8"><rect x="295.0" y="475.0" width="150" height="50" rx="8" fill="#2d2d2d" stroke="#DCDCAA" stroke-width="2" /><text text-anchor="middle" font-size="11" fill="#D4D4D4"><tspan x="370.0" y="493.0">B8</tspan><tspan x="370.0" y="507.0">int i = 0</tspan></text></g>
+<g id="node-B9"><rect x="215.0" y="565.0" width="150" height="50" rx="8" fill="#2d2d2d" stroke="#DCDCAA" stroke-width="2" /><text text-anchor="middle" font-size="11" fill="#D4D4D4"><tspan x="290.0" y="583.0">B9</tspan><tspan x="290.0" y="597.0">i &lt; n</tspan></text></g>
+<g id="node-B10"><rect x="135.0" y="655.0" width="150" height="50" rx="8" fill="#2d2d2d" stroke="#DCDCAA" stroke-width="2" /><text text-anchor="middle" font-size="11" fill="#D4D4D4"><tspan x="210.0" y="673.0">B10</tspan><tspan x="210.0" y="687.0">total = total + i</tspan></text></g>
+<g id="node-B11"><rect x="295.0" y="655.0" width="150" height="50" rx="8" fill="#2d2d2d" stroke="#DCDCAA" stroke-width="2" /><text text-anchor="middle" font-size="11" fill="#D4D4D4"><tspan x="370.0" y="673.0">B11</tspan><tspan x="370.0" y="687.0">n = n - 1</tspan></text></g>
+<g id="node-B12"><rect x="215.0" y="745.0" width="150" height="50" rx="8" fill="#2d2d2d" stroke="#DCDCAA" stroke-width="2" /><text text-anchor="middle" font-size="11" fill="#D4D4D4"><tspan x="290.0" y="763.0">B12</tspan><tspan x="290.0" y="777.0">i++</tspan></text></g>
+</svg>
